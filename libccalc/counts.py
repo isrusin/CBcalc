@@ -21,6 +21,18 @@ class Counts():
 		Note: Use calc() and load() to calculate or upload counts.
 		"""
 		self.counts = dict()
+		self.ptrs = []
+	
+	def free_counts(self):
+		if self.ptrs:
+			module_path = os.path.dirname(__file__) or "."
+			cw_lib = ctypes.CDLL(module_path + "/dll/count_words.so")
+			cw_lib.free_counts.argtypes = [ctypes.c_void_p]
+			cw_lib.free_counts.restype = None
+			for ptr in self.ptrs:
+				cw_lib.free_counts(ptr)
+			self.ptrs = []
+			self.counts.clear()
 	
 	def get_count(self, site):
 		"""Get count of given site.
@@ -136,8 +148,15 @@ class Counts():
 		struct_ = [slen, hlen, glen]
 		for i in range(num):
 			self.counts[tuple(struct_)] = (counts[i], counts[i][num_index])
+			self.ptrs.append(counts[i])
 			num_index >>= 2
 			struct_[0] -= 1
+	
+	def __enter__(self):
+		return self
+	
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.free_counts()
 
 def calc_all(fasta_path, structs):
 	counts = Counts()

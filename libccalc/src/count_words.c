@@ -284,3 +284,7 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
 	gzclose(fasta);
 	return counts;
 }
+
+void free_counts(void *ptr){
+	free(ptr);
+}
