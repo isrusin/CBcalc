@@ -70,7 +70,7 @@ if __name__ == "__main__":
 	ouline = "{Site}\t{No:d}\t{Ne:.2f}\t{Ratio:.3f}\t{Total:.0f}\n"
 	for acv in acvs:
 		counts = cnt.calc_all(inpath % acv, structs)
-		with open(oupath % acv, 'w') as outsv:
+		with open(oupath % acv, 'w') as outsv, counts:
 			outsv.write(title)
 			for wrapped in sorted(sites, key=str):
 				vals = dict()
