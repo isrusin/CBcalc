@@ -1,0 +1,3 @@
+cbclib/bin/*
+cbclib/dll/*
+*.pyc
