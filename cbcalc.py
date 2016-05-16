@@ -3,8 +3,8 @@
 import argparse as ap
 import sys
 
-import libccalc.counts as cnt
-import libccalc.sites as st
+import cbclib.counts as cnt
+import cbclib.sites as st
 
 
 def load_sites(instl, wrapper, len_cutoff=8):
@@ -51,12 +51,11 @@ if __name__ == "__main__":
 	           "karlin": st.KarlinSite}[args.method]
 	sites, structs = load_sites(args.instl, wrapper, 10)
 	counts = cnt.calc_all(args.inseq, structs)
+	title = ("Site\tObserved number\tExpected number (%s)\t" +
+	         "Contrast ratio\tTotal number\n") % args.method.capitalize()
+	ouline = "{Site}\t{No:d}\t{Ne:.2f}\t{Ratio:.3f}\t{Total:.0f}\n"
 	with args.outsv as outsv:
-		outsv.write(
-		        "Site\tObserved number\tExpected number (%s)\t" +
-		        "Contrast ratio\tTotal number\n"
-		        )
-		ouline = "{Site}\t{No:d}\t{Ne:.2f}\t{Ratio:.3f}\t{Length:.0f}\n"
+		outsv.write(title)
 		for wrapped in sorted(sites, key=str):
 			vals = dict()
 			vals["Site"] = wrapped.str_init

@@ -3,8 +3,8 @@
 import argparse as ap
 import sys
 
-import libccalc.counts as cnt
-import libccalc.sites as st
+import cbclib.counts as cnt
+import cbclib.sites as st
 
 
 def load_sites(instl, wrapper, len_cutoff=8):
