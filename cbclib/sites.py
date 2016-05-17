@@ -89,14 +89,15 @@ class Site():
                  form.
         struct -- site structure, tuple(L, U, M).
         structs -- a set of all structures required for calculation of
-        contrast
-               and expected number of the site.
+                   contrast and expected number of the site.
     """
     
-    def __init__(self, site):
+    def __init__(self, site, maxlen=10):
         """Site(site)
         
             site -- string, could contain ATGCBDHVSWMKRYN symbols.
+            maxlen -- site length cutoff, default 10; raise ValueError
+                      if site length is greater than the cutoff.
         """
         self.str_init = site.upper().strip('N')
         self.T = len(self.str_init)
@@ -109,7 +110,7 @@ class Site():
             self.str_site = self.str_init
             self.U = 0
         self.L = len(self.str_site)
-        if self.L > 12:
+        if self.L > maxlen:
             raise ValueError("Site is too long: %d", self.L)
         self.M = self.T - self.L
         self.eL = len(site.upper().replace('N', ''))
