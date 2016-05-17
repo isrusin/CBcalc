@@ -59,7 +59,7 @@ if __name__ == "__main__":
         for wrapped in sorted(sites, key=str):
             vals = dict()
             vals["Site"] = wrapped.str_init
-            vals["Length"] = counts.get_total(wrapped.struct)
+            vals["Total"] = counts.get_total(wrapped.struct)
             vals["No"] = wrapped.calc_observed(counts)
             vals["Ne"] = wrapped.calc_expected(counts)
             vals["Ratio"] = vals["No"] / (vals["Ne"] or float("NaN"))
