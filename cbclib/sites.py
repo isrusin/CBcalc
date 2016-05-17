@@ -38,10 +38,10 @@ def digitize(site, U, M):
     """
     sites = [0]
     begin = 0
-    while site[begin] == 'N':
+    while begin < len(site) and site[begin] == 'N':
         begin += 1
     end = len(site)
-    while site[end - 1] == 'N':
+    while end > 0 and site[end - 1] == 'N':
         end -= 1
     for nucl in site[begin:end]:
         if nucl in nucls:
@@ -111,7 +111,9 @@ class Site():
             self.U = 0
         self.L = len(self.str_site)
         if self.L > maxlen:
-            raise ValueError("Site is too long: %d", self.L)
+            raise ValueError("site is too long: %d", self.L)
+        if self.L == 0:
+            raise ValueError("empty site")
         self.M = self.T - self.L
         self.eL = len(site.upper().replace('N', ''))
         self.dsite = digitize(self.str_site, self.U, self.M)
@@ -181,17 +183,21 @@ class MarkovSite(Site):
     """
     
     def _prepare(self):
-        self.rpart = digitize(self.str_site[1:], self.U-1, self.M)
+        site_arr = list(self.str_site)
+        site_arr[0] = "N"
+        self.rpart = digitize(site_arr, self.U, self.M)
         self.structs.add(self.rpart[0])
-        self.lpart = digitize(self.str_site[:-1], self.U, self.M)
-        self.structs.add(self.lpart[0])
-        self.cpart = digitize(self.str_site[1:-1], self.U-1, self.M)
+        site_arr[-1] = "N"
+        self.cpart = digitize(site_arr, self.U, self.M)
         self.structs.add(self.cpart[0])
+        site_arr[0] = self.str_site[0]
+        self.lpart = digitize(site_arr, self.U, self.M)
+        self.structs.add(self.lpart[0])
     
     def calc_expected(self, counts):
         """Estimate expected number of the site with Mmax based method."""
         if self.eL == 1:
-            return counts.get_total((1, 0, 0)) * len(self.dsite[1]) / 4.0
+            return counts.get_total() * len(self.dsite[1]) / 4.0
         div = counts.get_count(self.cpart)
         if div == 0:
             return float('NaN')
@@ -231,7 +237,7 @@ class PevznerSite(Site):
     def calc_expected(self, counts):
         """Estimate expected number of the site with Pevzner's method."""
         if self.eL == 1:
-            return counts.get_total((1, 0, 0)) * len(self.dsite[1]) / 4.0
+            return counts.get_total() * len(self.dsite[1]) / 4.0
         div = 1.0
         for dsite in self.doubleN:
             div *= counts.get_count(dsite)
@@ -265,7 +271,7 @@ class KarlinSite(Site):
     def calc_expected(self, counts):
         """Estimate expected number of the site with Karlin's method."""
         if self.eL == 1:
-            return counts.get_total((1, 0, 0)) * len(self.dsite[1]) / 4.0
+            return counts.get_total() * len(self.dsite[1]) / 4.0
         div = decimal.Decimal(1)
         for dsite in self.evenN:
             div *= decimal.Decimal(counts.get_freq(dsite))

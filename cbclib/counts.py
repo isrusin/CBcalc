@@ -92,7 +92,7 @@ class Counts():
             count += counts[dnucl]
         return count / total
     
-    def get_total(self, struct):
+    def get_total(self, struct=(1, 0, 0)):
         return self.counts[struct][1]
     
     def load(self, incnt):
@@ -121,6 +121,8 @@ class Counts():
                     counts[site] = int(line.split('\t')[-1])
                     site += 1
             self.counts[struct] = (counts, total)
+            if struct == (1, 0, 0):
+                self.counts[(0, 0, 0)] = ([total], total)
     
     def calc(self, fasta_path, struct):
         """Calculate counts for sequence in the fasta file.
@@ -151,6 +153,9 @@ class Counts():
             self.ptrs.append(counts[i])
             num_index >>= 2
             struct_[0] -= 1
+        if (1, 0, 0) in self.counts:
+            total = self.counts[(1, 0, 0)][1]
+            self.counts[(0, 0, 0)] = ([total], total)
     
     def __enter__(self):
         return self
