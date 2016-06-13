@@ -34,38 +34,42 @@ def load_sites(instl, flags, len_cutoff=10):
     return sites, structs
 
 if __name__ == "__main__":
-    parser = ap.ArgumentParser(description="Contrast calculation")
+    parser = ap.ArgumentParser(
+            description="Contrast calculation", usage="usage: cbcalc.py " +
+            "[-h] FASTA [-s file] [-o file] [method(s)]"
+            )
     parser.add_argument(
-            "-f", "--fasta", dest="inseq", metavar="file", required=True,
-            help="Input fasta file, may be gzipped."
+            "inseq", metavar="FASTA",
+            help="Input .fasta file, may be gzipped."
             )
     parser.add_argument(
             "-s", "--sites", dest="instl", metavar="file",
             type=ap.FileType('r'), default=sys.stdin,
             help="Input list of sites, one-per-line."
             )
-    method_group = parser.add_argument_group(
-            title="methods", description="""Methods of expected frequency
-            calculation, the order of arguments determine column order of
-            the output file. If no method is specified, default set (mmax,
-            pevzner, karlin) will be used."""
-            )
-    method_group.add_argument(
-            "-M", dest="methods", action="append_const", const="mmax",
-            help="use Mmax based method of expected frequency calculation"
-            )
-    method_group.add_argument(
-            "-P", dest="methods", action="append_const", const="pevzner",
-            help="use Pevzner's method of expected frequency calculation"
-            )
-    method_group.add_argument(
-            "-K", dest="methods", action="append_const", const="karlin",
-            help="use Karlin's method of expected frequency calculation"
-            )
     parser.add_argument(
             "-o", "--out", dest="outsv", metavar="file",
             type=ap.FileType('w'), default=sys.stdout,
             help="Output tabular (.tsv) file, default is stdout"
+            )
+    method_group = parser.add_argument_group(
+            title="Method arguments", description="""Arguments that allow
+            to select methods of expected frequency calculation. Order of
+            the arguments determines column order of the output file. If
+            no method is specified, default set (mmax, pevzner, karlin)
+            will be used."""
+            )
+    method_group.add_argument(
+            "-M", "--mmax", dest="methods", action="append_const",
+            const="mmax", help="Mmax based method"
+            )
+    method_group.add_argument(
+            "-P", "--pevzner", dest="methods", action="append_const",
+            const="pevzner", help="Pevzner's method"
+            )
+    method_group.add_argument(
+            "-K", "--karlin", dest="methods", action="append_const",
+            const="karlin", help="Karlin's method"
             )
     args = parser.parse_args()
     methods_list = ["mmax", "pevzner", "karlin"]
