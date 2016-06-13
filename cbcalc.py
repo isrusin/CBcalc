@@ -7,21 +7,30 @@ import cbclib.counts as cnt
 import cbclib.sites as st
 
 
-def load_sites(instl, wrapper, len_cutoff=8):
-    sites = set()
+def load_sites(instl, flags, len_cutoff=10):
+    sites = []
+    for_structs = []
+    wrappers = zip(flags, [st.MarkovSite, st.PevznerSite, st.KarlinSite])
     with instl:
         for line in instl:
-            try:
-                site = wrapper(line.strip("\n\t\r Nn-."))
-            except ValueError:
-                sys.stderr.write("%s is too long, skipped.\n" % str(site))
+            site = line.strip("\n\r\t Nn-.")
+            wrapped = []
+            for flag, wrapper in wrappers:
+                if flag:
+                    try:
+                        wsite = wrapper(site)
+                        length = wsite.L
+                        if length > len_cutoff:
+                            break
+                        wrapped.append(wsite)
+                    except ValueError:
+                        break
+            else:
+                sites.append(wrapped)
+                for_structs.extend(wrapped)
                 continue
-            length = site.L
-            if length > len_cutoff:
-                sys.stderr.write("%s is too long, skipped.\n" % site)
-                continue
-            sites.add(site)
-    structs = st.get_structs(sites)
+            sys.stderr.write("%s is too long, skipped.\n" % site)
+    structs = st.get_structs(for_structs)
     return sites, structs
 
 if __name__ == "__main__":
@@ -35,11 +44,23 @@ if __name__ == "__main__":
             type=ap.FileType('r'), default=sys.stdin,
             help="Input list of sites, one-per-line."
             )
-    parser.add_argument(
-            "-m", "--method", dest="method", default="karlin",
-            choices=["mmax", "pevzner", "karlin"],
-            help="Method of expected frequency calculation, " +
-            "Karlin's method is default."
+    method_group = parser.add_argument_group(
+            title="methods", description="""Methods of expected frequency
+            calculation, the order of arguments determine column order of
+            the output file. If no method is specified, default set (mmax,
+            pevzner, karlin) will be used."""
+            )
+    method_group.add_argument(
+            "-M", dest="methods", action="append_const", const="mmax",
+            help="use Mmax based method of expected frequency calculation"
+            )
+    method_group.add_argument(
+            "-P", dest="methods", action="append_const", const="pevzner",
+            help="use Pevzner's method of expected frequency calculation"
+            )
+    method_group.add_argument(
+            "-K", dest="methods", action="append_const", const="karlin",
+            help="use Karlin's method of expected frequency calculation"
             )
     parser.add_argument(
             "-o", "--out", dest="outsv", metavar="file",
@@ -47,21 +68,42 @@ if __name__ == "__main__":
             help="Output tabular (.tsv) file, default is stdout"
             )
     args = parser.parse_args()
-    wrapper = {"mmax": st.MarkovSite, "pevzner": st.PevznerSite,
-               "karlin": st.KarlinSite}[args.method]
-    sites, structs = load_sites(args.instl, wrapper, 10)
+    methods_list = ["mmax", "pevzner", "karlin"]
+    methods = args.methods
+    if not methods:
+        methods = methods_list
+    flags = []
+    for method in methods_list:
+        flags.append(method in methods)
+    sites, structs = load_sites(args.instl, flags)
     counts = cnt.calc_all(args.inseq, structs)
-    title = ("Site\tObserved number\tExpected number (%s)\t" +
-             "Contrast ratio\tTotal number\n") % args.method.capitalize()
-    ouline = "{Site}\t{No:d}\t{Ne:.2f}\t{Ratio:.3f}\t{Total:.0f}\n"
+    title = "Site\tNo\t"
+    ouline = "{Site}\t{No:d}\t"
+    for method in methods:
+        substitution = tuple(method[0].upper() * 2)
+        title += "%ce\t%cr\t"  % substitution
+        ouline += "{%ce:.2f}\t{%cr:.3f}\t" % substitution
+    title += "Total number\n"
+    ouline += "{Total:.0f}\n"
     with args.outsv as outsv:
         outsv.write(title)
-        for wrapped in sorted(sites, key=str):
+        for wrapped in sites:
             vals = dict()
-            vals["Site"] = wrapped.str_init
-            vals["Total"] = counts.get_total(wrapped.struct)
-            vals["No"] = wrapped.calc_observed(counts)
-            vals["Ne"] = wrapped.calc_expected(counts)
-            vals["Ratio"] = vals["No"] / (vals["Ne"] or float("NaN"))
+            wsite = wrapped[0]
+            vals["Site"] = wsite.str_init
+            vals["Total"] = counts.get_total(wsite.struct)
+            vals["No"] = wsite.calc_observed(counts)
+            if flags[0]: #Mmax
+                wsite = wrapped.pop(0)
+                vals["Me"] = wsite.calc_expected(counts)
+                vals["Mr"] = vals["No"] / (vals["Me"] or float("NaN"))
+            if flags[1]: #Pevzner
+                wsite = wrapped.pop(0)
+                vals["Pe"] = wsite.calc_expected(counts)
+                vals["Pr"] = vals["No"] / (vals["Pe"] or float("NaN"))
+            if flags[2]: #Karlin
+                wsite = wrapped.pop(0)
+                vals["Ke"] = wsite.calc_expected(counts)
+                vals["Kr"] = vals["No"] / (vals["Ke"] or float("NaN"))
             outsv.write(ouline.format(**vals))
 
