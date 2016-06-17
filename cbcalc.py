@@ -7,24 +7,23 @@ import cbclib.counts as cnt
 import cbclib.sites as st
 
 
-def load_sites(instl, flags, len_cutoff=10):
+def load_sites(instl, methods, len_cutoff=10):
     sites = []
     for_structs = []
-    wrappers = zip(flags, [st.MarkovSite, st.PevznerSite, st.KarlinSite])
     with instl:
         for line in instl:
             site = line.strip("\n\r\t Nn-.")
             wrapped = []
-            for flag, wrapper in wrappers:
-                if flag:
-                    try:
-                        wsite = wrapper(site)
-                        length = wsite.L
-                        if length > len_cutoff:
-                            break
-                        wrapped.append(wsite)
-                    except ValueError:
+            for method in methods:
+                wrapper = st.wrappers[method]
+                try:
+                    wsite = wrapper(site)
+                    length = wsite.L
+                    if length > len_cutoff:
                         break
+                    wrapped.append(wsite)
+                except ValueError:
+                    break
             else:
                 sites.append(wrapped)
                 for_structs.extend(wrapped)
@@ -33,10 +32,25 @@ def load_sites(instl, flags, len_cutoff=10):
     structs = st.get_structs(for_structs)
     return sites, structs
 
+def cbcalc(outsv, ouline, sites, counts, methods):
+    for wrapped in sites:
+        vals = dict()
+        wsite = wrapped[0]
+        vals["Site"] = wsite.str_init
+        vals["Total"] = counts.get_total(wsite.struct)
+        obs = wsite.calc_observed(counts)
+        vals["No"] = obs
+        for method in methods:
+            wsite = wrapped.pop(0)
+            exp = wsite.calc_expected(counts)
+            vals["%ce" % method] = exp
+            vals["%cr" % method] = obs / (exp or float("NaN"))
+        outsv.write(ouline.format(**vals))
+
 if __name__ == "__main__":
     parser = ap.ArgumentParser(
-            description="Contrast calculation", usage="usage: cbcalc.py " +
-            "[-h] FASTA [-s file] [-o file] [method(s)]"
+            description="Contrast calculation", usage="cbcalc.py [-h] " +
+            "FASTA [-s file] [-o file] [method(s)]"
             )
     parser.add_argument(
             "inseq", metavar="FASTA",
@@ -61,53 +75,28 @@ if __name__ == "__main__":
             )
     method_group.add_argument(
             "-M", "--mmax", dest="methods", action="append_const",
-            const="mmax", help="Mmax based method"
+            const="M", help="Mmax based method"
             )
     method_group.add_argument(
             "-P", "--pevzner", dest="methods", action="append_const",
-            const="pevzner", help="Pevzner's method"
+            const="P", help="Pevzner's method"
             )
     method_group.add_argument(
             "-K", "--karlin", dest="methods", action="append_const",
-            const="karlin", help="Karlin's method"
+            const="K", help="Karlin's method"
             )
     args = parser.parse_args()
-    methods_list = ["mmax", "pevzner", "karlin"]
-    methods = args.methods
-    if not methods:
-        methods = methods_list
-    flags = []
-    for method in methods_list:
-        flags.append(method in methods)
-    sites, structs = load_sites(args.instl, flags)
-    counts = cnt.calc_all(args.inseq, structs)
+    methods = args.methods or ["M", "P", "K"]
     title = "Site\tNo\t"
     ouline = "{Site}\t{No:d}\t"
     for method in methods:
-        substitution = tuple(method[0].upper() * 2)
-        title += "%ce\t%cr\t"  % substitution
-        ouline += "{%ce:.2f}\t{%cr:.3f}\t" % substitution
-    title += "Total number\n"
+        title += "%se\t%sr\t" % (method, method)
+        ouline += "{%se:.2f}\t{%sr:.3f}\t" % (method, method)
+    title += "Total\n"
     ouline += "{Total:.0f}\n"
-    with args.outsv as outsv:
+    methods = sorted(set(methods))
+    sites, structs = load_sites(args.instl, methods)
+    with cnt.calc_all(args.inseq, structs) as counts, args.outsv as outsv:
         outsv.write(title)
-        for wrapped in sites:
-            vals = dict()
-            wsite = wrapped[0]
-            vals["Site"] = wsite.str_init
-            vals["Total"] = counts.get_total(wsite.struct)
-            vals["No"] = wsite.calc_observed(counts)
-            if flags[0]: #Mmax
-                wsite = wrapped.pop(0)
-                vals["Me"] = wsite.calc_expected(counts)
-                vals["Mr"] = vals["No"] / (vals["Me"] or float("NaN"))
-            if flags[1]: #Pevzner
-                wsite = wrapped.pop(0)
-                vals["Pe"] = wsite.calc_expected(counts)
-                vals["Pr"] = vals["No"] / (vals["Pe"] or float("NaN"))
-            if flags[2]: #Karlin
-                wsite = wrapped.pop(0)
-                vals["Ke"] = wsite.calc_expected(counts)
-                vals["Kr"] = vals["No"] / (vals["Ke"] or float("NaN"))
-            outsv.write(ouline.format(**vals))
+        cbcalc(outsv, ouline, sites, counts, methods)
 
