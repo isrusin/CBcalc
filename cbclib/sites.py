@@ -8,7 +8,9 @@ import cPickle
 import decimal
 
 __all__ = ["digitize", "dump_sl", "load_sl", "get_structs", "Site",
-           "MarkovSite", "PevznerSite", "KarlinSite"]
+           "MarkovSite", "PevznerSite", "KarlinSite", "wrappers"]
+
+wrappers = {} # filled later
 
 nucls = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 
@@ -173,6 +175,8 @@ class Site():
                 self.L, self.U, self.M
                 )
 
+wrappers["B"] = Site
+
 class MarkovSite(Site):
     
     """Site wrapper implementing Mmax based expected number calculation.
@@ -203,6 +207,8 @@ class MarkovSite(Site):
             return float('NaN')
         num = counts.get_count(self.lpart) * counts.get_count(self.rpart)
         return float(num) / div
+
+wrappers["M"] = MarkovSite
 
 class PevznerSite(Site):
     
@@ -249,6 +255,8 @@ class PevznerSite(Site):
             num *= counts.get_count(dsite)
         return pow(num, 2.0 / self.eL) / div
 
+wrappers["P"] = PevznerSite
+
 class KarlinSite(Site):
     
     """Site wrapper implementing Karlin's expected number calculation.
@@ -281,6 +289,8 @@ class KarlinSite(Site):
         for dsite in self.oddN:
             num *= decimal.Decimal(counts.get_freq(dsite))
         return float(num / div)
+
+wrappers["K"] = KarlinSite
 
 def dump_sl(site_list, ounsl):
     """Dump collection of wrapped sites."""
