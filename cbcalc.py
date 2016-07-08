@@ -32,30 +32,25 @@ def load_sites(instl, methods, len_cutoff=10):
     structs = st.get_structs(for_structs)
     return sites, structs
 
-def cbcalc(outsv, ouline, sites, counts, methods):
+def cbcalc(sid, outsv, ouline, sites, counts, methods):
+    vals = {"ID": sid}
+    index = 0
     for wrapped in sites:
-        vals = dict()
-        wsite = wrapped[0]
+        wsite = wrapped[index]
         vals["Site"] = wsite.str_init
         vals["Total"] = counts.get_total(wsite.struct)
         obs = wsite.calc_observed(counts)
         vals["No"] = obs
         for method in methods:
-            wsite = wrapped.pop(0)
+            wsite = wrapped[index]
             exp = wsite.calc_expected(counts)
             vals["%ce" % method] = exp
             vals["%cr" % method] = obs / (exp or float("NaN"))
+            index += 1
         outsv.write(ouline.format(**vals))
 
 if __name__ == "__main__":
-    parser = ap.ArgumentParser(
-            description="Contrast calculation", usage="cbcalc.py [-h] " +
-            "FASTA [-s file] [-o file] [method(s)]"
-            )
-    parser.add_argument(
-            "inseq", metavar="FASTA",
-            help="Input .fasta file, may be gzipped."
-            )
+    parser = ap.ArgumentParser(description="Contrast calculation")
     parser.add_argument(
             "-s", "--sites", dest="instl", metavar="file",
             type=ap.FileType('r'), default=sys.stdin,
@@ -64,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument(
             "-o", "--out", dest="outsv", metavar="file",
             type=ap.FileType('w'), default=sys.stdout,
-            help="Output tabular (.tsv) file, default is stdout"
+            help="Output tabular (.tsv) file, default is stdout."
             )
     method_group = parser.add_argument_group(
             title="Method arguments", description="""Arguments that allow
@@ -85,10 +80,38 @@ if __name__ == "__main__":
             "-K", "--karlin", dest="methods", action="append_const",
             const="K", help="Karlin's method"
             )
+    subparsers = parser.add_subparsers(
+            title="Input mode", metavar="MODE",
+            help="Either 'file' or 'path'."
+            )
+    file_parser = subparsers.add_parser(
+            "file", help="""In 'file' mode you should specify input
+            .fasta(.gz) files by name which will be used in the output
+            file as sequence ID (without .fasta* extension)."""
+            )
+    file_parser.add_argument(
+            "inseq", metavar="FASTA", nargs="+",
+            help="Input .fasta file, may be gzipped."
+            )
+    path_parser = subparsers.add_parser(
+            "path", help="""In 'path' mode you should specify a single
+            path with {} placeholder for sequence ID which will be
+            extracted from a file (-i/--id option) and will be used in the
+            output file."""
+            )
+    path_parser.add_argument(
+            "inseq", metavar="PATH", help="""Input .fasta files path,
+            use {} as placeholder for sequence IDs, specified with
+            -i/--id option."""
+            )
+    path_parser.add_argument(
+            "-i", "--id", dest="sids", metavar="file", required=True,
+            help="Input file with a list of sequence IDs, one-per-line."
+            )
     args = parser.parse_args()
     methods = args.methods or ["M", "P", "K"]
-    title = "Site\tNo\t"
-    ouline = "{Site}\t{No:d}\t"
+    title = "ID\tSite\tNo\t"
+    ouline = "{ID}\t{Site}\t{No:d}\t"
     for method in methods:
         title += "%se\t%sr\t" % (method, method)
         ouline += "{%se:.2f}\t{%sr:.3f}\t" % (method, method)
@@ -96,7 +119,17 @@ if __name__ == "__main__":
     ouline += "{Total:.0f}\n"
     methods = sorted(set(methods))
     sites, structs = load_sites(args.instl, methods)
-    with cnt.calc_all(args.inseq, structs) as counts, args.outsv as outsv:
+    ispath = "sids" in vars(args)
+    if ispath:
+        with open(args.sids) as insids:
+            sids = sorted(set(insids.read().strip().split("\n")))
+        seqs = [args.inseq.format(sid) for sid in sids]
+    else:
+        seqs = args.inseq
+        sids = [seq.split(".fasta")[0] for seq in seqs]
+    with args.outsv as outsv:
         outsv.write(title)
-        cbcalc(outsv, ouline, sites, counts, methods)
+        for sid, seq in zip(sids, seqs):
+            with cnt.calc_all(seq, structs) as counts:
+                cbcalc(sid, outsv, ouline, sites, counts, methods)
 
