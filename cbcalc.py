@@ -34,8 +34,8 @@ def load_sites(instl, methods, len_cutoff=10):
 
 def cbcalc(sid, outsv, ouline, sites, counts, methods):
     vals = {"ID": sid}
-    index = 0
     for wrapped in sites:
+        index = 0
         wsite = wrapped[index]
         vals["Site"] = wsite.str_init
         vals["Total"] = counts.get_total(wsite.struct)
