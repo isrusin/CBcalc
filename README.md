@@ -29,7 +29,7 @@ cbcalc.py [-s] [-o] METHODS MODE INPUT
 
 `-o` is for output file name specification, STDOUT is default.
 
-METHODS is any combination of `-M`, `-P`, and `-K` flags which determines methods of compositional bais calculation (Mmax based, Pevzner's, and Karlin's correspondingly) used and the order of the output columns. Default combination is `-MPK`.
+METHODS is any combination of `-M`, `-P`, and `-K` flags which determines methods of compositional bais calculation (Mmax based, Pevzner's, and Karlin's correspondingly) to use and the order of the output columns. Default combination is `-MPK`.
 
 ##### MODE
 CBCalc has two acting modes: "file" mode and "path" mode which use different specification of INPUT argument section. In "file" mode one or several fasta file names should be specified. The file names (with .fasta[.gz] extension ommited) are used as sequence names in the output.
@@ -47,7 +47,7 @@ printf "GATC\nGANNTC" | cbcalc.py -M -K file fasta_dir/*.fa.gz | head
 cbcalc.py -MMMo repreated_columns.tsv path fasta_dir/{}.fa -i acs.list
 ```
 
-Please, try './cbcalc.py -h', './cbcalc.py file -h', and './cbcalc.py path -h' for some additional details on CBCalc usage.
+Please, try `cbcalc.py -h`, `cbcalc.py file -h`, and `cbcalc.py path -h` for some additional details on CBCalc usage.
 
 ##### OUTPUT
 Output is a tab-separated table with single header line:
@@ -55,7 +55,7 @@ Output is a tab-separated table with single header line:
 ID <TAB> Site <TAB> No <TAB> (Xe <TAB> Xr <TAB>) Total
 ```
 
-ID is a sequence name, Site is a target word (or pattern), No is a number of word occurrences in the sequence, Xe is the expected number of word occurrences estimated with method X, Xr is the ratio of No to Xe, Total is very like sequence length but corrected by word length (the sequence is treated as a linear one). Number and order of Xe and Xr columns are determined by the METHODS section of input arguments.
+__ID__ is a sequence name, __Site__ is a target word (or pattern), __No__ is a number of word occurrences in the sequence, __Xe__ is the expected number of word occurrences estimated with method X, __Xr__ is the ratio of No to Xe, __Total__ is very like sequence length but corrected by word length (the sequence is treated as a linear one). Number and order of Xe and Xr columns are determined by the METHODS section of input arguments.
 
 ## Web-interface
 For single sequence requests you could use [web-interface](http://mouse.belozersky.msu.ru/tools/cbcalc).
