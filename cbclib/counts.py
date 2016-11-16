@@ -83,14 +83,14 @@ class Counts():
         counts, total = self.counts[struct]
         for dsite in dsites:
             count += counts[dsite]
-        return count / total
+        return count / (total or float("NaN"))
     
     def get_nucl_freq(self, nucl):
         count = 0.0
         counts, total = self.counts[(1, 0, 0)]
         for dnucl in nucl:
             count += counts[dnucl]
-        return count / total
+        return count / (total or float("NaN"))
     
     def get_total(self, struct=(1, 0, 0)):
         return self.counts[struct][1]
