@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument(
             "-s", "--sites", dest="instl", metavar="file",
             type=ap.FileType('r'), default=sys.stdin,
-            help="Input list of sites, one-per-line."
+            help="Input list of sites, one-per-line, default is stdin."
             )
     parser.add_argument(
             "-o", "--out", dest="outsv", metavar="file",

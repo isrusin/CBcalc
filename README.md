@@ -19,24 +19,25 @@ make dll
 ```
 
 ## Usage
-CBCalc is a command line util. For convenient usage cbcalc.py should have execute permission and its parent folder should be in the PATH environment variable. In the case it could be executed as:
+CBCalc is a command line util. For convenient usage, cbcalc.py should have execute permission and its parent folder should be in the PATH environment variable. In the case it could be executed as:
 
 ```
-cbcalc.py [-s] [-o] METHODS MODE INPUT
+cbcalc.py [-s] [-o] [METHODS] MODE INPUT
 ```
 
+##### Options (list of sites, output file, methods of calculation)
 `-s` is for input list of sites, one-per-line. If ommitted STDIN is used instead.
 
 `-o` is for output file name specification, STDOUT is default.
 
-METHODS is any combination of `-M`, `-P`, and `-K` flags which determines methods of compositional bais calculation (Mmax based, Pevzner's, and Karlin's correspondingly) to use and the order of the output columns. Default combination is `-MPK`.
+`METHODS` is any combination of `-M`, `-P`, and `-K` flags which determines methods of compositional bais calculation (Mmax based, Pevzner's, and Karlin's correspondingly) to use and the order of the output columns. Default combination is `-MPK`.
 
-##### MODE
+##### Modes and arguments (input sequences)
 CBCalc has two acting modes: "file" mode and "path" mode which use different specification of INPUT argument section. In "file" mode one or several fasta file names should be specified. The file names (with .fasta[.gz] extension ommited) are used as sequence names in the output.
 
 In "path" mode the util takes single path with `{}` placeholder for sequence ID. A list on sequence IDs should be specified with `-i/--id` agrument. The IDs will be used as sequence names in the output.
 
-_Examples:_
+##### Examples:
 ```
 cbcalc.py -s sites.list -o output.tsv file input1.fasta input2.fasta.gz
 ```
@@ -49,7 +50,7 @@ cbcalc.py -MMMo repreated_columns.tsv path fasta_dir/{}.fa -i acs.list
 
 Please, try `cbcalc.py -h`, `cbcalc.py file -h`, and `cbcalc.py path -h` for some additional details on CBCalc usage.
 
-##### OUTPUT
+## Output format
 Output is a tab-separated table with single header line:
 ```
 ID <TAB> Site <TAB> No <TAB> (Xe <TAB> Xr <TAB>) Total
