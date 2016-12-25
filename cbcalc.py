@@ -3,8 +3,8 @@
 import argparse as ap
 import sys
 
-import cbclib.counts as cnt
-import cbclib.sites as st
+import cbclib.counts
+import cbclib.sites
 
 
 def load_sites(instl, methods, len_cutoff=10):
@@ -15,7 +15,7 @@ def load_sites(instl, methods, len_cutoff=10):
             site = line.strip("\n\r\t Nn-.")
             wrapped = []
             for method in methods:
-                wrapper = st.wrappers[method]
+                wrapper = cbclib.sites.wrappers[method]
                 try:
                     wsite = wrapper(site)
                     length = wsite.L
@@ -29,7 +29,7 @@ def load_sites(instl, methods, len_cutoff=10):
                 for_structs.extend(wrapped)
                 continue
             sys.stderr.write("%s is too long, skipped.\n" % site)
-    structs = st.get_structs(for_structs)
+    structs = cbclib.sites.get_structs(for_structs)
     return sites, structs
 
 def cbcalc(sid, outsv, ouline, sites, counts, methods):
@@ -49,7 +49,7 @@ def cbcalc(sid, outsv, ouline, sites, counts, methods):
             index += 1
         outsv.write(ouline.format(**vals))
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = ap.ArgumentParser(description="Contrast calculation")
     parser.add_argument(
             "-s", "--sites", dest="instl", metavar="file",
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             "-i", "--id", dest="sids", metavar="file", required=True,
             help="Input file with a list of sequence IDs, one-per-line."
             )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     methods = args.methods or ["M", "P", "K"]
     title = "ID\tSite\tNo\t"
     ouline = "{ID}\t{Site}\t{No:d}\t"
@@ -130,6 +130,9 @@ if __name__ == "__main__":
     with args.outsv as outsv:
         outsv.write(title)
         for sid, seq in zip(sids, seqs):
-            with cnt.calc_all(seq, structs) as counts:
+            with cbclib.counts.calc_all(seq, structs) as counts:
                 cbcalc(sid, outsv, ouline, sites, counts, methods)
 
+
+if __name__ == "__main__":
+    sys.exit(main())
