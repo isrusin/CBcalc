@@ -7,47 +7,87 @@ import cbclib.counts
 import cbclib.sites
 
 
-def load_sites(instl, methods, len_cutoff=10):
-    sites = []
-    for_structs = []
-    with instl:
-        for line in instl:
-            site = line.strip("\n\r\t Nn-.")
-            wrapped = []
-            for method in methods:
-                wrapper = cbclib.sites.wrappers[method]
-                try:
-                    wsite = wrapper(site)
-                    length = wsite.L
-                    if length > len_cutoff:
-                        break
-                    wrapped.append(wsite)
-                except ValueError:
-                    break
-            else:
-                sites.append(wrapped)
-                for_structs.extend(wrapped)
-                continue
-            sys.stderr.write("%s is too long, skipped.\n" % site)
-    structs = cbclib.sites.get_structs(for_structs)
-    return sites, structs
+def make_output_stubs(methods):
+    """Make headers and row stub for output table.
 
-def cbcalc(sid, outsv, ouline, sites, counts, methods):
-    vals = {"ID": sid}
+    Arguments:
+        methods -- a list of method abbreviations from
+                  sbslib.sites.wrappers
+
+    Returns:
+        headers -- output table headers as string
+        row_stub -- output table row stub to use with str.format()
+    """
+    headers = "ID\tSite\tNo\t"
+    row_stub = "{id}\t{site}\t{num:d}\t"
+    for method in methods:
+        headers += "%se\t%sr\t" % (method, method)
+        row_stub += "{%se:.2f}\t{%sr:.3f}\t" % (method, method)
+    headers += "Total\n"
+    row_stub += "{total:.0f}\n"
+    return headers, row_stub
+
+def wrap_sites(raw_sites, methods, maxlen=10):
+    """Wrap raw sites with wrappers implementing specified methods.
+
+    Arguments:
+        raw_sites -- a list of sites as strings
+        methods -- a list of method abbreviations from
+                   cbclib.sites.wrappers
+        maxlen (optional) -- site length cutoff, default 10
+
+    Returns:
+        wrapped_sites -- a list of tuples, each contains wrapped
+                         versions of a site for each method
+        unwrapped_sites -- a dict which contains reason to skip for every
+                           unwrapped raw site
+    """
+    wrapped_sites = []
+    unwrapped_sites = {}
+    for raw_site in raw_sites:
+        wrapped_site = []
+        for method in methods:
+            Wrapper = cbclib.sites.wrappers[method]
+            try:
+                wrapped_site.append(Wrapper(raw_site, maxlen))
+            except ValueError as error:
+                unwrapped_sites[raw_site] = error.message
+                break
+        else:
+            wrapped_sites.append(tuple(wrapped_site))
+    return wrapped_sites, unwrapped_sites
+
+def cbcalc(sid, row_stub, sites, counts, methods):
+    """Calculate values for sites and return formatted output table rows.
+
+    Arguments:
+        sid -- sequence ID to put into 'ID' column of the output table
+        row_stub -- stub of table row to use in str.format
+        sites -- a list of wrapped sites obtained with wrap_sites()
+        counts -- word counts calculated with cbclib.count.calc_all()
+        methods -- a list of method abbreviations from
+                   cbclib.sites.wrappers
+
+    Returns:
+        rows -- a list of formatted rows of the output table
+    """
+    rows = []
+    vals = {"id": sid}
     for wrapped in sites:
         index = 0
         wsite = wrapped[index]
-        vals["Site"] = wsite.str_init
-        vals["Total"] = counts.get_total(wsite.struct)
+        vals["site"] = wsite.str_init
+        vals["total"] = counts.get_total(wsite.struct)
         obs = wsite.calc_observed(counts)
-        vals["No"] = obs
+        vals["num"] = obs
         for method in methods:
             wsite = wrapped[index]
             exp = wsite.calc_expected(counts)
             vals["%ce" % method] = exp
             vals["%cr" % method] = obs / (exp or float("NaN"))
             index += 1
-        outsv.write(ouline.format(**vals))
+        rows.append(row_stub.format(**vals))
+    return rows
 
 def main(argv=None):
     parser = ap.ArgumentParser(description="Contrast calculation")
@@ -106,32 +146,31 @@ def main(argv=None):
             )
     path_parser.add_argument(
             "-i", "--id", dest="sids", metavar="file", required=True,
-            help="Input file with a list of sequence IDs, one-per-line."
+            help="""Input file with a list of sequence IDs, IDs should not
+            contain whitespace symbols."""
             )
     args = parser.parse_args(argv)
-    methods = args.methods or ["M", "P", "K"]
-    title = "ID\tSite\tNo\t"
-    ouline = "{ID}\t{Site}\t{No:d}\t"
-    for method in methods:
-        title += "%se\t%sr\t" % (method, method)
-        ouline += "{%se:.2f}\t{%sr:.3f}\t" % (method, method)
-    title += "Total\n"
-    ouline += "{Total:.0f}\n"
-    methods = sorted(set(methods))
-    sites, structs = load_sites(args.instl, methods)
     ispath = "sids" in vars(args)
     if ispath:
         with open(args.sids) as insids:
-            sids = sorted(set(insids.read().strip().split("\n")))
+            sids = sorted(set(insids.read().split()))
         seqs = [args.inseq.format(sid) for sid in sids]
     else:
         seqs = args.inseq
         sids = [seq.split(".fasta")[0] for seq in seqs]
+    methods = args.methods or ["M", "P", "K"]
+    headers, row_stub = make_output_stubs(methods)
+    methods = sorted(set(methods))
+    with args.instl as instl:
+        raw_sites = instl.read().split()
+    sites, unwrapped = wrap_sites(raw_sites, methods)
+    structs = cbclib.sites.get_structs(s for w in sites for s in w)
     with args.outsv as outsv:
-        outsv.write(title)
+        outsv.write(headers)
         for sid, seq in zip(sids, seqs):
             with cbclib.counts.calc_all(seq, structs) as counts:
-                cbcalc(sid, outsv, ouline, sites, counts, methods)
+                rows = cbcalc(sid, row_stub, sites, counts, methods)
+            outsv.writelines(rows)
 
 
 if __name__ == "__main__":
