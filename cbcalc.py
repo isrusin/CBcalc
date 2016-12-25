@@ -2,6 +2,7 @@
 
 import argparse as ap
 import sys
+from os import basename
 
 import cbclib.counts
 import cbclib.sites
@@ -127,7 +128,7 @@ def main(argv=None):
     file_parser = subparsers.add_parser(
             "file", help="""In 'file' mode you should specify input
             .fasta(.gz) files by name which will be used in the output
-            file as sequence ID (without .fasta* extension)."""
+            file as sequence ID (basenames without .fasta* extension)."""
             )
     file_parser.add_argument(
             "inseq", metavar="FASTA", nargs="+",
@@ -147,7 +148,7 @@ def main(argv=None):
     path_parser.add_argument(
             "-i", "--id", dest="sids", metavar="file", required=True,
             help="""Input file with a list of sequence IDs, IDs should not
-            contain whitespace symbols."""
+            contain any whitespace symbols."""
             )
     args = parser.parse_args(argv)
     ispath = "sids" in vars(args)
@@ -157,7 +158,7 @@ def main(argv=None):
         seqs = [args.inseq.format(sid) for sid in sids]
     else:
         seqs = args.inseq
-        sids = [seq.split(".fasta")[0] for seq in seqs]
+        sids = [basename(seq).split(".fasta")[0] for seq in seqs]
     methods = args.methods or ["M", "P", "K"]
     headers, row_stub = make_output_stubs(methods)
     methods = sorted(set(methods))
