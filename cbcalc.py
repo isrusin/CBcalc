@@ -2,7 +2,7 @@
 
 import argparse as ap
 import sys
-from os import basename
+from os.path import basename
 
 import cbclib.counts
 import cbclib.sites
@@ -91,71 +91,67 @@ def cbcalc(sid, row_stub, sites, counts, methods):
     return rows
 
 def main(argv=None):
-    parser = ap.ArgumentParser(description="Contrast calculation")
+    parser = ap.ArgumentParser(
+        description="CBcalc - Compositional Bias calculation.",
+        add_help=False, usage="\n    %(prog)s ".join([
+            "", "--help", "[-soMPK] FASTA [FASTA ...]",
+            "[-soMPK] PATH -i LIST"
+        ])
+    )
     parser.add_argument(
-            "-s", "--sites", dest="instl", metavar="file",
-            type=ap.FileType('r'), default=sys.stdin,
-            help="Input list of sites, one-per-line, default is stdin."
-            )
+        "inseq", metavar="FASTA", nargs="+",
+        help="Input .fasta file, may be gzipped."
+    )
     parser.add_argument(
-            "-o", "--out", dest="outsv", metavar="file",
-            type=ap.FileType('w'), default=sys.stdout,
-            help="Output tabular (.tsv) file, default is stdout."
-            )
+        "-i", "--id", dest="insids", metavar="LIST", type=ap.FileType("r"),
+        help="""Input LIST file with sequence IDs; makes CBcalc to treat
+        the first (and the only in the case) positional argument as PATH
+        stub."""
+    )
+    parser.add_argument(
+        "_none", metavar="PATH", nargs="?",# only to make up help message
+        help="""Input .fasta files path stub with '{}' placeholder for
+        sequence IDs, which are listed in a LIST file specified with
+        -i/--id option."""
+    )
+    parser.add_argument(
+        "-s", "--site", dest="instl", metavar="LIST",
+        type=ap.FileType('r'), default=sys.stdin,
+        help="File with a list of sites, one-per-line, default is stdin."
+    )
+    parser.add_argument(
+        "-o", "--out", dest="outsv", metavar="FILE",
+        type=ap.FileType('w'), default=sys.stdout,
+        help="Output tabular (.tsv) file, default is stdout."
+    )
     method_group = parser.add_argument_group(
-            title="Method arguments", description="""Arguments that allow
-            to select methods of expected frequency calculation. Order of
-            the arguments determines column order of the output file. If
-            no method is specified, default set (mmax, pevzner, karlin)
-            will be used."""
-            )
+        description="""Folowing arguments allow
+        to select methods of expected frequency calculation. Order of
+        the arguments determines column order of the output file. If
+        no method is specified, default set (mmax, pevzner, karlin)
+        will be used."""
+    )
     method_group.add_argument(
-            "-M", "--mmax", dest="methods", action="append_const",
-            const="M", help="Mmax based method"
-            )
+        "-M", "--mmax", dest="methods", action="append_const",
+        const="M", help="Mmax based method"
+    )
     method_group.add_argument(
-            "-P", "--pevzner", dest="methods", action="append_const",
-            const="P", help="Pevzner's method"
-            )
+        "-P", "--pevzner", dest="methods", action="append_const",
+        const="P", help="Pevzner's method"
+    )
     method_group.add_argument(
-            "-K", "--karlin", dest="methods", action="append_const",
-            const="K", help="Karlin's method"
-            )
-    subparsers = parser.add_subparsers(
-            title="Input mode", metavar="MODE",
-            help="Either 'file' or 'path'."
-            )
-    file_parser = subparsers.add_parser(
-            "file", help="""In 'file' mode you should specify input
-            .fasta(.gz) files by name which will be used in the output
-            file as sequence ID (basenames without .fasta* extension)."""
-            )
-    file_parser.add_argument(
-            "inseq", metavar="FASTA", nargs="+",
-            help="Input .fasta file, may be gzipped."
-            )
-    path_parser = subparsers.add_parser(
-            "path", help="""In 'path' mode you should specify a single
-            path with {} placeholder for sequence ID which will be
-            extracted from a file (-i/--id option) and will be used in the
-            output file."""
-            )
-    path_parser.add_argument(
-            "inseq", metavar="PATH", help="""Input .fasta files path,
-            use {} as placeholder for sequence IDs, specified with
-            -i/--id option."""
-            )
-    path_parser.add_argument(
-            "-i", "--id", dest="sids", metavar="file", required=True,
-            help="""Input file with a list of sequence IDs, IDs should not
-            contain any whitespace symbols."""
-            )
+        "-K", "--karlin", dest="methods", action="append_const",
+        const="K", help="Karlin's method"
+    )
+    parser.add_argument(
+        "-h", "-?", "-help", "--help", action="help",
+        help=ap.SUPPRESS
+    )
     args = parser.parse_args(argv)
-    ispath = "sids" in vars(args)
-    if ispath:
-        with open(args.sids) as insids:
+    if args.insids is not None:
+        with args.insids as insids:
             sids = sorted(set(insids.read().split()))
-        seqs = [args.inseq.format(sid) for sid in sids]
+        seqs = [args.inseq[0].format(sid) for sid in sids]
     else:
         seqs = args.inseq
         sids = [basename(seq).split(".fasta")[0] for seq in seqs]
