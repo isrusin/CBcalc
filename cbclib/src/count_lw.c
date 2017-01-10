@@ -5,6 +5,11 @@
 
 #include "count_words.h"
 
+extern char* error_message;
+extern int error_type;
+extern const int FILE_ERROR;
+extern const int MEMMORY_ERROR;
+
 void site_to_string(unsigned long, int, char *);
 void print_counts(FILE *, int, int, int, long **);
 
@@ -30,6 +35,15 @@ int main(int argc, char **argv){
         return 1;
     }
     long **counts = count_bipart_words(argv[1], len, pos, gap);
+    if(!counts){
+        if(error_type == FILE_ERROR)
+            printf("Input file error: %s\n", error_message);
+        else if(error_type == MEMMORY_ERROR)
+            printf("Memmory error: %s\n", error_message);
+        else
+            printf("Unknown error\n");
+        return 1;
+    }
     FILE *cnt;
     cnt = fopen(argv[2], "wb");
     assert(cnt);

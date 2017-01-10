@@ -1,6 +1,12 @@
 #ifndef COUNTWORDS
 #define COUNTWORDS
 
+int error_type;
+const int FILE_ERROR;
+const int MEMMORY_ERROR;
+char *error_message;
+
+
 typedef struct {
     int len;
     unsigned long mask;

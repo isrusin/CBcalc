@@ -1,9 +1,13 @@
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <zlib.h>
 
 #include "count_words.h"
+
+int error_type = 0;
+const int FILE_ERROR = 1;
+const int MEMMORY_ERROR = 2;
+char *error_message = NULL;
 
 int translate(char nucl){
     switch(nucl){
@@ -214,21 +218,34 @@ bipart_t make_bpsite(int gap, int ulen, int dlen, int minlen, int maxlen){
 }
 
 long **count_short_words(char *filename, int len){
-    
+
     gzFile fasta;
     fasta = gzopen(filename, "rb");
-    assert(fasta);
-    
+    if(!fasta){
+        error_type = FILE_ERROR;
+        error_message = "can't open fasta file";
+        return NULL;
+    }
+
     long **counts;
     counts = (long **)calloc(len, sizeof(long *));
+    if(!counts){
+        error_type = MEMMORY_ERROR;
+        error_message = "can't allocate memmory for count pointers";
+        return NULL;
+    }
     int i;
     unsigned long num = (1ul << len * 2);
     for(i = 0; i < len; i ++){
         counts[i] = (long *)calloc(num + 1, sizeof(long));// +1 for total
+        if(!counts[i]){
+            error_type = MEMMORY_ERROR;
+            error_message = "can't allocate memmory for counts";
+            return NULL;
+        }
         num >>= 2;
     }
-    assert(counts);
-    
+
     site_t site;
     site.len = len;
     site.mask = (1ul << len * 2) - 1ul;
@@ -247,26 +264,39 @@ long **count_short_words(char *filename, int len){
 }
 
 long **count_bipart_words(char *filename, int len, int pos, int gap){
-    
+
     gzFile fasta;
     fasta = gzopen(filename, "rb");
-    assert(fasta);
-    
+    if(!fasta){
+        error_type = FILE_ERROR;
+        error_message = "can't open fasta file";
+        return NULL;
+    }
+
     int ulen = pos;
     int dlen = len - ulen;
     int minlen = ulen < dlen ? ulen : dlen;
     int maxlen = len - minlen;
-    
+
     long **counts;
     counts = (long **)calloc(dlen, sizeof(long *));
+    if(!counts){
+        error_type = MEMMORY_ERROR;
+        error_message = "can't allocate memmory for count pointers";
+        return NULL;
+    }
     int i;
     unsigned long num = (1ul << len * 2);
     for(i = 0; i < dlen; i ++){
         counts[i] = (long *)calloc(num + 1, sizeof(long));// +1 for total
+        if(!counts[i]){
+            error_type = MEMMORY_ERROR;
+            error_message = "can't allocate memmory for counts";
+            return NULL;
+        }
         num >>= 2;
     }
-    assert(counts);
-    
+
     bipart_t bpsite;
     bpsite = make_bpsite(gap, ulen, dlen, minlen, maxlen);
     while(1){
