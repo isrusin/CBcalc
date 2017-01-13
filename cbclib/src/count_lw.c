@@ -14,9 +14,10 @@ void site_to_string(unsigned long, int, char *);
 void print_counts(FILE *, int, int, int, long **);
 
 int main(int argc, char **argv){
-    if(argc != 6){
-        printf("usage: ./count_short_words input.fasta[.gz] output.cnt "
-               "word_lengtn gap_position gap_length\n");
+    int pos_arg = 0, gap_arg = 0;
+    if(argc != 6 && argc != 4){
+        printf("args: input.fasta[.gz] output.cnt "
+               "word_length [gap_position gap_length]\n");
         return 1;
     }
     const int len = atoi(argv[3]);
@@ -24,17 +25,25 @@ int main(int argc, char **argv){
         printf("bad word length, only [1..14] is allowed\n");
         return 1;
     }
-    const int pos = atoi(argv[4]);
-    if(pos < 1 || pos >= len){
-        printf("bad gap position\n");
-        return 1;
+    if(argc == 6){
+        pos_arg = atoi(argv[4]);
+        if(pos_arg < 1 || pos_arg >= len){
+            printf("bad gap position\n");
+            return 1;
+        }
+        gap_arg = atoi(argv[5]);
+        if(gap_arg < 1 || gap_arg > 14){
+            printf("bad gap length, only [1..14] is allowed\n");
+            return 1;
+        }
     }
-    const int gap = atoi(argv[5]);
-    if(len < 1 || len > 14){
-        printf("bad gap length, only [1..14] is allowed\n");
-        return 1;
-    }
-    long **counts = count_bipart_words(argv[1], len, pos, gap);
+    const pos = pos_arg;
+    const gap = gap_arg;
+    long **counts;
+    if(!gap)
+        counts = count_short_words(argv[1], len);
+    else
+        counts = count_bipart_words(argv[1], len, pos, gap);
     if(!counts){
         if(error_type == FILE_ERROR)
             printf("Input file error: %s\n", error_message);
@@ -74,8 +83,10 @@ void print_counts(FILE *cnt, int len, int pos, int gap, long **countsp){
     for(i = pos + 1; i <= len; i ++){
         dest[i] = '\0';
         counts = countsp[len - i];
-        fprintf(cnt, "#word_length=%d, gap_position=%d, gap_length=%d, "
-                "total_number=%d\n", i, pos, gap, counts[max]);
+        fprintf(cnt, "#word_length=%d, ", i);
+        if(gap != 0)
+            fprintf(cnt, "gap_position=%d, gap_length=%d, ", pos, gap);
+        fprintf(cnt, "total_number=%d\n", counts[max]);
         unsigned long site;
         for(site = 0ul; site < max; site ++){
             site_to_string(site, i, dest);
