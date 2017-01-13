@@ -132,6 +132,10 @@ def main(argv=None):
         will be used."""
     )
     method_group.add_argument(
+        "-B", "--bernoulli", dest="methods", action="append_const",
+        const="B", help="Bernoulli model based method"
+    )
+    method_group.add_argument(
         "-M", "--mmax", dest="methods", action="append_const",
         const="M", help="Mmax based method"
     )
