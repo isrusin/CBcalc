@@ -1,3 +1,4 @@
-cbclib/bin/*
-cbclib/dll/*
+cbclib/count_words
 *.pyc
+*.o
+*.so

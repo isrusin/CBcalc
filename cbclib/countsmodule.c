@@ -1,6 +1,6 @@
 #include <Python.h>
 
-#include "count_words.h"
+#include "countscalc.h"
 
 
 typedef struct{

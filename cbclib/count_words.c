@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <zlib.h>
 
-#include "count_words.h"
+#include "countscalc.h"
 
 extern char* error_message;
 extern int error_type;

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <zlib.h>
 
-#include "count_words.h"
+#include "countscalc.h"
 
 int error_type = 0;
 const int FILE_ERROR = 1;

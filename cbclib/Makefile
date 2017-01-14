@@ -1,34 +1,30 @@
-.PHONY: all bin dll clean
+.PHONY: all bin clean
 
-SRC_DIR = src
-BIN_DIR = bin
-DLL_DIR = dll
-
-BIN = $(BIN_DIR)/count_sw $(BIN_DIR)/count_lw
-DLL = $(DLL_DIR)/count_words.so
+BIN = count_words
+#DLL = counts.so
 
 CFLAGS = -O2 -march=native
 
-all: bin dll
+all: bin
 
 bin: $(BIN)
 
-$(BIN_DIR)/count_%w: $(BIN_DIR)/count_%w.o $(BIN_DIR)/count_words.o
-	gcc -o $@ -lz $^
+count_words: count_words.o countscalc.o
+	gcc $^ -o $@ -lz
 
-$(BIN_DIR)/count_%.o: $(SRC_DIR)/count_%.c
-	mkdir -p $(BIN_DIR)
-	gcc -c $(CFLAGS) -o $@ $^
+count_words.o: count_words.c
+	gcc $^ -c $(CFLAGS) -o $@
 
-dll: $(DLL)
+countscalc.o: countscalc.c
+	gcc $^ -c $(CFLAGS) -o $@
 
-$(DLL_DIR)/count_words.so: $(DLL_DIR)/pic_count_words.o
-	gcc -shared -o $@ -lz $^
-
-$(DLL_DIR)/pic_count_words.o: $(SRC_DIR)/count_words.c
-	mkdir -p $(DLL_DIR)
-	gcc -fPIC -c $(CFLAGS) -o $@ $^
+#dll: $(DLL)
+#
+#counts.so: counts.o
+#	gcc $^ -shared -o $@ -lz
+#
+#counts.o: countsmodule.c
+#	gcc $^ -fPIC -c $(CFLAGS) -o $@
 
 clean:
-	rm -rf $(BIN_DIR) $(DLL_DIR)
-	rm -f *.pyc
+	rm -f *.pyc *.so *.o $(BIN)
