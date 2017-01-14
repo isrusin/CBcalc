@@ -2,17 +2,16 @@
 
 #include "countscalc.h"
 
-
 typedef struct{
     PyObject_HEAD
-    
-} pcw_Counts;
+    long **counts;
+} counts_Counts;
 
-static PyTypeObject pcw_CountsType = {
+static PyTypeObject counts_CountsType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "countwords.Counts",       /*tp_name*/
-    sizeof(pcw_Counts),        /*tp_basicsize*/
+    "counts.Counts",           /*tp_name*/
+    sizeof(counts_Counts),     /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
     0,                         /*tp_print*/
@@ -23,40 +22,17 @@ static PyTypeObject pcw_CountsType = {
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
+    0,                         /*tp_hash*/
     0,                         /*tp_call*/
     0,                         /*tp_str*/
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Counts help",             /* tp_doc */
+    "Counts help",             /*tp_doc*/
 };
 
-static PyMethodDef Counts_methods[] = {
-    {NULL}
-};
-
-#ifndef PyMODINIT_FUNC
-#define PyMODINIT_FUNC void
-#endif
-
-PyMODINIT_FUNC
-initcounts(void)
-{
-    PyObject* counts;
-
-    pcw_CountsType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&pcw_CountsType) < 0)
-        return;
-
-    counts = Py_InitModule3("Counts", Counts_methods, "Counts help");
-
-    Py_INCREF(&pcw_CountsType);
-    PyModule_AddObject(counts, "Counts", (PyObject *)&pcw_CountsType);
-}
-
-static PyObject *py_count_words(PyObject *self, PyObject *args){
+static PyObject *Counts_count(PyObject *counts, PyObject *args){
     char *filename;
     int len, pos = 0, gap = 0;
     if(!PyArg_Parse(args, "si|ii", &filename, len, pos, gap))
@@ -66,17 +42,26 @@ static PyObject *py_count_words(PyObject *self, PyObject *args){
     }
 }
 
-static PyMethodDef pcw_methods[] = {
-    {"count_words", py_count_words, METH_VARARGS, "count words help"},
-    {NULL, NULL, 0, NULL}
+static PyMethodDef counts_methods[] = {
+    {NULL}
 };
 
-static struct PyModuleDef pcw_module = {
-    PyModuleDef_HEAD_INIT,
-    "countwords", "module help", -1, pcw_methods
-};
+#ifndef PyMODINIT_FUNC
+#define PyMODINIT_FUNC void
+#endif
 
 PyMODINIT_FUNC
-PyInit_countwords(){
-    return PyModule_Create(&pcw_module);
+initCounts(void)
+{
+    PyObject* counts;
+
+    counts_CountsType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&counts_CountsType) < 0)
+        return;
+
+    counts = Py_InitModule3("counts", counts_methods, "module help");
+
+    Py_INCREF(&counts_CountsType);
+    PyModule_AddObject(counts, "Counts", (PyObject *)&counts_CountsType);
 }
+
