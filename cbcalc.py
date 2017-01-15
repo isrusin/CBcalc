@@ -4,8 +4,8 @@ import argparse as ap
 import sys
 from os.path import basename
 
-import cbclib.counts
 import cbclib.sites
+from cbclib.counts import Counts
 
 
 def make_output_stubs(methods):
@@ -48,7 +48,7 @@ def wrap_sites(raw_sites, methods, maxlen=10):
     for raw_site in raw_sites:
         wrapped_site = []
         for method in methods:
-            Wrapper = cbclib.sites.wrappers[method]
+            Wrapper = cbclib.sites.get_wrapper_by_abbr[method]
             try:
                 wrapped_site.append(Wrapper(raw_site, maxlen))
             except ValueError as error:
@@ -78,7 +78,7 @@ def cbcalc(sid, row_stub, sites, counts, methods):
         index = 0
         wsite = wrapped[index]
         vals["site"] = wsite.str_init
-        vals["total"] = counts.get_total(wsite.struct)
+        vals["total"] = counts.get_total(wsite.struct_hash)
         obs = wsite.calc_observed(counts)
         vals["num"] = obs
         for method in methods:
@@ -165,7 +165,7 @@ def main(argv=None):
     with args.outsv as outsv:
         outsv.write(headers)
         for sid, seq in zip(sids, seqs):
-            with cbclib.counts.calc_all(seq, structs) as counts:
+            with Counts(seq, structs) as counts:
                 rows = cbcalc(sid, row_stub, sites, counts, methods)
             outsv.writelines(rows)
 
