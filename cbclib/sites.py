@@ -106,6 +106,13 @@ class Site(object):
     Implements Bernoulli model-based method of the expected number
     calculation.
 
+    Class methods:
+        `get_structs` -- get all structs (as tuples) required for counts
+                         calculation
+
+    Class variables:
+        `abbr` -- name abbreviation for the wrapper class
+
     Instance methods:
         `get_length` -- get length of the site
         `calc_observed` -- calculate the observed number of site occurences
@@ -123,6 +130,21 @@ class Site(object):
         `dsite` -- a list of integers - degenerate varians of the site
         `struct_hash` -- site structure hash
     """
+
+    abbr = "B"
+
+    @staticmethod
+    def get_structs(site):
+        """Get all site structures required for calculation of counts.
+
+        Arguments:
+            `site` -- `Site` (or subclass) instance
+
+        Returns:
+            list -- site structures as tuples
+        """
+        return [(1, 0, 0),
+                (site.length, site.gap_position, site.gap_length)]
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """Constructor.
@@ -232,14 +254,18 @@ class MarkovSite(Site):
 
     """Site wrapper implementing Mmax-based expected number calculation.
 
-    Overrides:
-        `calc_expected` -- implements Markov chain model of the maximum
-                           applicable order (Schbath et al., 1995;
-                           Gelfand et al., 1997)
-
     Note: the complete list of methods and attibutes is available in
     `Site` class dicstring.
     """
+
+    abbr = "M"
+
+    @staticmethod
+    def get_structs(site):
+        """See `Site.get_structs` docstring for details."""
+        return [(1, 0, 0),
+                (site.length, site.gap_position, site.gap_length),
+                (site.length-1, site.gap_position-1, site.gap_length)]
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """See `Site.__init__` docstring for details."""
@@ -255,8 +281,10 @@ class MarkovSite(Site):
     def calc_expected(self, counts):
         """Estimate expected number of occurences of the site.
 
-        Implements Mmax-based method, i.e. assumes only the independence
-        between the edge positions of the site.
+        Implements the method based on the Markov chain model of the
+        maximum applicable order (Mmax), which assumes that only the edge
+        positions of the site are independent (Schbath et al., 1995;
+        Gelfand et al., 1997).
 
         Arguments:
             `counts` -- `Counts` object from `cbclib.counts` module
@@ -276,13 +304,19 @@ class PevznerSite(Site):
 
     """Site wrapper implementing the method of Pevzner et al.
 
-    Overrides:
-        `calc_expected` -- implementation of the method suggested by
-                           Pevzner et al. in 1989.
-
     Note: the complete list of methods and attibutes is available in
     `Site` class dicstring.
     """
+
+    abbr = "P"
+
+    @staticmethod
+    def get_structs(site):
+        """See `Site.get_structs` docstring for details."""
+        return [(1, 0, 0),
+                (site.length, site.gap_position, site.gap_length),
+                (site.length-1, site.gap_position-1, site.gap_length),
+                (site.length-2, site.gap_position-2, site.gap_length)]
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """See `Site.__init__` docstring for details."""
@@ -340,13 +374,22 @@ class KarlinSite(Site):
 
     """Site wrapper implementing the method of Karlin et al.
 
-    Overrides:
-        `calc_expected` -- implementation of the method described by
-                           Karlin and Cardon in 1994.
-
     Note: the complete list of methods and attibutes is available in
     `Site` class dicstring.
     """
+
+    abbr = "K"
+
+    @staticmethod
+    def get_structs(site):
+        """See `Site.get_structs` docstring for details."""
+        slen = site.length
+        pos = site.gap_position
+        glen = site.gap_length
+        structs = [(max(pos, slen-pos), 0, 0)]
+        for i in range(pos):
+            structs.append((slen-i, pos-i, glen))
+        return structs
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """See `Site.__init__` docstring for details."""
@@ -384,13 +427,10 @@ class KarlinSite(Site):
 
 def get_wrapper_by_abbr(abbr):
     """Get site wrapper class by abbreviation."""
-    wrappers = {
-        "B": Site,
-        "M": MarkovSite,
-        "P": PevznerSite,
-        "K": KarlinSite
-    }
-    return wrappers.get(abbr)
+    for cls in [Site, MarkovSite, PevznerSite, KarlinSite]:
+        if cls.abbr == abbr:
+            return cls
+    return None
 
 def dump_site_list(site_list, ounsl):
     """Dump collection of wrapped sites into file."""
@@ -402,10 +442,23 @@ def load_site_list(innsl):
     with innsl:
         return cPickle.load(innsl)
 
-def get_structs(site_list):
-    """Return a set of structures of all sites and all their subsites.
+def get_structs(site_list, method_abbrs):
+    """Return a tuple of site structures required to handle the sites.
 
-    Use this function to obtain structures for word counts calculation.
+    Use this function to get the structs for counts calculation.
     """
-    return site_list
+    struct_dict = {(0, 0): 1}
+    _get_structs = Site.get_structs
+    for cls in [KarlinSite, PevznerSite, MarkovSite]:
+        if cls.abbr in method_abbrs:
+            _get_structs = cls.get_structs
+            break
+    for site in site_list:
+        for slen, pos, glen in _get_structs(site):
+            if struct_dict.get((pos, glen), 0) < slen:
+                struct_dict[(pos, glen)] = slen
+    structs = []
+    for (pos, glen), slen in struct_dict.items():
+        structs.append((slen, pos, glen))
+    return tuple(sorted(structs, reversed=True))
 
