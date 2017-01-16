@@ -24,10 +24,12 @@ static void fill_struct_hash(SiteStruct *s){
 typedef struct{
     PyObject_HEAD
     long **countset;
-    long **totals;
+    long *totals;
     SiteStruct *structs;
     int structs_num;
 } Counts;
+
+static PyMemberDef Noddy_members[] = {{NULL}};
 
 static PyObject *Counts_new(PyTypeObject *type, PyObject *args,
                             PyObject *kwds){
@@ -56,8 +58,9 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
             if(s.hash > max_hash)
                 max_hash = s.hash;
         }
+        // reuse of __init__ will cause memmory leak!! #TOFIX
         self->countset = (long **)calloc(max_hash+1, sizeof(long *));
-        self->totals = (long **)calloc(max_hash+1, sizeof(long *));
+        self->totals = (long *)calloc(max_hash+1, sizeof(long));
         for(i=0; i<structs_num; i++){
             SiteStruct s = structs[i];
             long **counts;
@@ -67,7 +70,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 long total_index = 1ul << (2 * s.slen);
                 for(j=s.slen-1; j>=0; j--){
                     self->countset[j] = counts[j];
-                    self->totals[j] = counts[j] + total_index;
+                    self->totals[j] = *(counts[j] + total_index);
                     total_index >>= 2;
                 }
             }else{
@@ -77,7 +80,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 int len = s.slen-s.pos;
                 for(j=0; j<len; j++){
                     self->countset[s.hash-j] = counts[len-j-1];
-                    self->totals[s.hash-j] = counts[len-j-1] + total_index;
+                    self->totals[s.hash-j] = *(counts[len-j-1] + total_index);
                     total_index >>= 2;
                 }
             }
@@ -86,6 +89,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
         self->structs = structs;
         self->structs_num = structs_num;
     }
+    return 0;
 }
 
 static void Counts_dealloc(Counts *self){
@@ -95,7 +99,7 @@ static void Counts_dealloc(Counts *self){
     for(i=0; i<self->structs_num; i++){
         SiteStruct s = structs[i];
         long **ptr;
-        ptr = self->countset + s.hash
+        ptr = self->countset + s.hash;
         while(s.slen > s.pos){
             free(*ptr);
             ptr --;
@@ -122,7 +126,7 @@ static PyObject *Counts_get_count(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(dsite_list[i])
+            dsite = PyInt_AsLong(dsite_list[i]);
             count += counts[dsite];
         }
         return Py_BuildValue("l", count);
@@ -143,12 +147,12 @@ static PyObject *Counts_get_freq(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(dsite_list[i])
+            dsite = PyInt_AsLong(dsite_list[i]);
             count += counts[dsite];
         }
         double freq = (double) count;
-        long total = *(self->totals[struct_hash])
-        //if(total == 0)
+        long total = *(self->totals[struct_hash]);
+        // if(total == 0)
         return Py_BuildValue("d", freq/total);
     }
 }
@@ -159,54 +163,79 @@ static PyObject *Counts_get_total(Counts *self, PyObject *args,
     if(!PyArg_ParseTuple(args, "|i", &struct_hash))
         return NULL;
     else{
-        long total = *(self->totals[struct_hash])
+        long total = *(self->totals[struct_hash]);
         return Py_BuildValue("l", total);
     }
 }
 
-static PyTypeObject CountsType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
-    "counts.Counts",           /*tp_name*/
-    sizeof(Counts),            /*tp_basicsize*/
-    0,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
-    0,                         /*tp_print*/
-    0,                         /*tp_getattr*/
-    0,                         /*tp_setattr*/
-    0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
-    0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash*/
-    0,                         /*tp_call*/
-    0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
-    0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Counts help",             /*tp_doc*/
+static PyMethodDef Counts_methods[] = {
+    {
+        "get_count", (PyCFunction)Noddy_get_count, METH_VARARGS,
+        "get_count help"
+    }, {
+        "get_freq", (PyCFunction)Noddy_get_freq, METH_VARARGS,
+        "get_freq help"
+    }, {
+        "get_total", (PyCFunction)Noddy_get_total, METH_VARARGS,
+        "get_total help"
+    }, {NULL}
 };
 
-static PyMethodDef counts_methods[] = {
-    {NULL}
+static PyTypeObject CountsType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/
+    "counts.Counts",            /*tp_name*/
+    sizeof(Counts),             /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    (destructor)Counts_dealloc, /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "Counts help",              /*tp_doc*/
+    0,                          /*tp_traverse*/
+    0,                          /*tp_clear*/
+    0,                          /*tp_richcompare*/
+    0,                          /*tp_weaklistoffset*/
+    0,                          /*tp_iter*/
+    0,                          /*tp_iternext*/
+    Counts_methods,             /*tp_methods*/
+    Counts_members,             /*tp_members*/
+    0,                          /*tp_getset*/
+    0,                          /*tp_base*/
+    0,                          /*tp_dict*/
+    0,                          /*tp_descr_get*/
+    0,                          /*tp_descr_set*/
+    0,                          /*tp_dictoffset*/
+    (initproc)Counts_init,      /*tp_init*/
+    0,                          /*tp_alloc*/
+    Counts_new,                 /*tp_new*/
 };
+
+static PyMethodDef counts_methods[] = {{NULL}};
 
 #ifndef PyMODINIT_FUNC
 #define PyMODINIT_FUNC void
 #endif
 
 PyMODINIT_FUNC
-initCounts(void){
+initcounts(void){
     PyObject* counts;
-
     CountsType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&CountsType) < 0)
         return;
-
     counts = Py_InitModule3("counts", counts_methods, "module help");
-
     Py_INCREF(&CountsType);
     PyModule_AddObject(counts, "Counts", (PyObject *)&CountsType);
 }
