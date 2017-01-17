@@ -11,9 +11,13 @@ typedef struct{
 } SiteStruct;
 
 static void fill_struct_hash(SiteStruct *s){
+    if(s->slen <= 0){
+        s->hash = 0;
+        return;
+    }
     int struct_hash = 0;
     struct_hash += s->slen;
-    if(s->glen){
+    if(s->glen > 0 && s->pos > 0){
         struct_hash += MAX_LENGTH + 1;
         struct_hash += (s->pos - 1) * MAX_LENGTH;
         struct_hash += (s->glen - 1) * (MAX_LENGTH - 1) * MAX_LENGTH;
@@ -37,7 +41,7 @@ static PyObject *Counts_new(PyTypeObject *type, PyObject *args,
 }
 
 static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
-    char *filename; // leak of filename; uncomment the last
+    char *filename;
     PyObject *structs_seq;
     if(!PyArg_ParseTuple(args, "sO", &filename, &structs_seq))
         return -1;
@@ -63,31 +67,26 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
         for(i=0; i<structs_num; i++){
             SiteStruct s = structs[i];
             long **counts;
-            int j;
-            if(s.glen){
+            if(s.glen)
                 counts = count_bipart_words(filename, s.slen,
                                             s.pos, s.glen);
-                long total_index = 1ul << (2 * s.slen);
-                int num = s.slen-s.pos;
-                for(j=0; j<num; j++){
-                    self->countset[s.hash-j] = counts[j];
-                    self->totals[s.hash-j] = *(counts[j] + total_index);
-                    total_index >>= 2;
-                }
-            }else{
+            else
                 counts = count_short_words(filename, s.slen);
-                long total_index = 1ul << (2 * s.slen);
-                for(j=0; j<s.slen; j++){
-                    self->countset[s.slen-j] = counts[j];
-                    self->totals[s.slen-j] = *(counts[j] + total_index);
-                    total_index >>= 2;
-                }
+            long total_index = 1ul << (2 * s.slen);
+            int num = s.slen-s.pos;
+            int j;
+            for(j=0; j<num; j++){
+                self->countset[s.hash-j] = counts[j];
+                self->totals[s.hash-j] = *(counts[j] + total_index);
+                total_index >>= 2;
             }
             free(counts);
         }
+        self->countset[0] = &(self->totals[1]); /* empty site count
+                                is equal to total length in nucls */
+        self->totals[0] = self->totals[1];
         self->structs = structs;
         self->structs_num = structs_num;
-        //free(filename);
     }
     return 0;
 }

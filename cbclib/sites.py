@@ -143,8 +143,7 @@ class Site(object):
         Returns:
             list -- site structures as tuples
         """
-        return [(1, 0, 0),
-                (site.length, site.gap_position, site.gap_length)]
+        return [(site.length, site.gap_position, site.gap_length)]
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """Constructor.
@@ -263,9 +262,15 @@ class MarkovSite(Site):
     @staticmethod
     def get_structs(site):
         """See `Site.get_structs` docstring for details."""
-        return [(1, 0, 0),
-                (site.length, site.gap_position, site.gap_length),
-                (site.length-1, site.gap_position-1, site.gap_length)]
+        slen = site.length
+        pos = site.gap_position
+        glen = site.gap_length
+        structs = [(slen, pos, glen)]
+        if pos > 1:
+            structs.append([slen-1, pos-1, glen])
+        else:
+            structs.append([slen-1, 0, 0])
+        return structs
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """See `Site.__init__` docstring for details."""
@@ -313,10 +318,19 @@ class PevznerSite(Site):
     @staticmethod
     def get_structs(site):
         """See `Site.get_structs` docstring for details."""
-        return [(1, 0, 0),
-                (site.length, site.gap_position, site.gap_length),
-                (site.length-1, site.gap_position-1, site.gap_length),
-                (site.length-2, site.gap_position-2, site.gap_length)]
+        slen = site.length
+        pos = site.gap_position
+        glen = site.gap_length
+        structs = [(slen, pos, glen)]
+        if pos > 2:
+            structs.append((slen-2, pos-2, glen))
+            structs.append((slen-1, pos-1, glen))
+        elif pos > 1:
+            structs.append((slen-1, pos-1, glen))
+            structs.append((slen-2, 0, 0))
+        else:
+            structs.append([slen-1, 0, 0])
+        return structs
 
     def __init__(self, site, maxlen=MAX_LENGTH, maxgap=MAX_GAP_LENGTH):
         """See `Site.__init__` docstring for details."""
