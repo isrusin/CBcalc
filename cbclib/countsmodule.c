@@ -29,8 +29,6 @@ typedef struct{
     int structs_num;
 } Counts;
 
-static PyMemberDef Noddy_members[] = {{NULL}};
-
 static PyObject *Counts_new(PyTypeObject *type, PyObject *args,
                             PyObject *kwds){
     Counts *self;
@@ -42,7 +40,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
     char *filename;
     PyObject *structs_tuple;
     if(!PyArg_ParseTuple(args, "sO", &filename, &structs_tuple))
-        return NULL;
+        return -1;
     else{
         int structs_num = PyTuple_Size(structs_tuple);
         int i;
@@ -80,7 +78,8 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 int len = s.slen-s.pos;
                 for(j=0; j<len; j++){
                     self->countset[s.hash-j] = counts[len-j-1];
-                    self->totals[s.hash-j] = *(counts[len-j-1] + total_index);
+                    self->totals[s.hash-j] = *(counts[len-j-1] +
+                                               total_index);
                     total_index >>= 2;
                 }
             }
@@ -126,7 +125,7 @@ static PyObject *Counts_get_count(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(dsite_list[i]);
+            dsite = PyInt_AsLong(PyList_GetItem(dsite_list, i));
             count += counts[dsite];
         }
         return Py_BuildValue("l", count);
@@ -147,11 +146,11 @@ static PyObject *Counts_get_freq(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(dsite_list[i]);
+            dsite = PyInt_AsLong(PyList_GetItem(dsite_list, i));
             count += counts[dsite];
         }
         double freq = (double) count;
-        long total = *(self->totals[struct_hash]);
+        long total = self->totals[struct_hash];
         // if(total == 0)
         return Py_BuildValue("d", freq/total);
     }
@@ -163,20 +162,20 @@ static PyObject *Counts_get_total(Counts *self, PyObject *args,
     if(!PyArg_ParseTuple(args, "|i", &struct_hash))
         return NULL;
     else{
-        long total = *(self->totals[struct_hash]);
+        long total = self->totals[struct_hash];
         return Py_BuildValue("l", total);
     }
 }
 
 static PyMethodDef Counts_methods[] = {
     {
-        "get_count", (PyCFunction)Noddy_get_count, METH_VARARGS,
+        "get_count", (PyCFunction)Counts_get_count, METH_VARARGS,
         "get_count help"
     }, {
-        "get_freq", (PyCFunction)Noddy_get_freq, METH_VARARGS,
+        "get_freq", (PyCFunction)Counts_get_freq, METH_VARARGS,
         "get_freq help"
     }, {
-        "get_total", (PyCFunction)Noddy_get_total, METH_VARARGS,
+        "get_total", (PyCFunction)Counts_get_total, METH_VARARGS,
         "get_total help"
     }, {NULL}
 };
@@ -211,7 +210,7 @@ static PyTypeObject CountsType = {
     0,                          /*tp_iter*/
     0,                          /*tp_iternext*/
     Counts_methods,             /*tp_methods*/
-    Counts_members,             /*tp_members*/
+    0,                          /*tp_members*/
     0,                          /*tp_getset*/
     0,                          /*tp_base*/
     0,                          /*tp_dict*/
@@ -223,7 +222,9 @@ static PyTypeObject CountsType = {
     Counts_new,                 /*tp_new*/
 };
 
-static PyMethodDef counts_methods[] = {{NULL}};
+static PyMethodDef counts_methods[] = {
+    {NULL}
+};
 
 #ifndef PyMODINIT_FUNC
 #define PyMODINIT_FUNC void
