@@ -48,7 +48,7 @@ def wrap_sites(raw_sites, methods, maxlen=10):
     for raw_site in raw_sites:
         wrapped_site = []
         for method in methods:
-            Wrapper = cbclib.sites.get_wrapper_by_abbr[method]
+            Wrapper = cbclib.sites.get_wrapper_by_abbr(method)
             try:
                 wrapped_site.append(Wrapper(raw_site, maxlen))
             except ValueError as error:
@@ -161,12 +161,12 @@ def main(argv=None):
     with args.instl as instl:
         raw_sites = instl.read().split()
     sites, unwrapped = wrap_sites(raw_sites, methods)
-    structs = cbclib.sites.get_structs(s for w in sites for s in w)
+    structs = cbclib.sites.get_structs([_s[0] for _s in sites], methods)
     with args.outsv as outsv:
         outsv.write(headers)
         for sid, seq in zip(sids, seqs):
-            with Counts(seq, structs) as counts:
-                rows = cbcalc(sid, row_stub, sites, counts, methods)
+            counts = Counts(seq, structs)
+            rows = cbcalc(sid, row_stub, sites, counts, methods)
             outsv.writelines(rows)
 
 
