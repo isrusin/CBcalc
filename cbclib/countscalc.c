@@ -167,7 +167,7 @@ void countup_bipart_res(bipart_t *sp, int real_uindex, long **countsp){
     unsigned long site;
     unsigned int uhalf;
     unsigned int dhalf = sp->arr[dindex];
-    unsigned long num_index = (1ul + sp->mask >> sp->ushift) << shift;
+    unsigned long num_index = ((1ul + sp->mask) >> sp->ushift) << shift;
     while(mask){
         (*countsp)[num_index] ++;
         num_index >>= 2;

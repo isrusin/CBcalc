@@ -460,5 +460,5 @@ def get_structs(site_list, method_abbrs):
     structs = []
     for (pos, glen), slen in struct_dict.items():
         structs.append((slen, pos, glen))
-    return tuple(sorted(structs, reversed=True))
+    return structs
 

@@ -37,24 +37,25 @@ static PyObject *Counts_new(PyTypeObject *type, PyObject *args,
 }
 
 static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
-    char *filename;
-    PyObject *structs_tuple;
-    if(!PyArg_ParseTuple(args, "sO", &filename, &structs_tuple))
+    char *filename; // leak of filename; uncomment the last
+    PyObject *structs_seq;
+    if(!PyArg_ParseTuple(args, "sO", &filename, &structs_seq))
         return -1;
     else{
-        int structs_num = PyTuple_Size(structs_tuple);
+        int structs_num = PySequence_Size(structs_seq);
         int i;
         SiteStruct *structs;
         structs = (SiteStruct *)calloc(structs_num, sizeof(SiteStruct));
         int max_hash = 0;
         for(i=0; i<structs_num; i++){
-            PyObject *item = PyTuple_GetItem(structs_tuple, i);
-            SiteStruct s = structs[i];
-            if(!PyArg_ParseTuple(item, "iii", &s.slen, &s.pos, &s.glen))
-                continue;
-            fill_struct_hash(&s);
-            if(s.hash > max_hash)
-                max_hash = s.hash;
+            PyObject *item = PySequence_GetItem(structs_seq, i);
+            SiteStruct *sp = &(structs[i]);
+            if(!PyArg_ParseTuple(item, "iii", &sp->slen, &sp->pos,
+                                 &sp->glen))
+                return -1;
+            fill_struct_hash(sp);
+            if(sp->hash > max_hash)
+                max_hash = sp->hash;
         }
         // reuse of __init__ will cause memmory leak!! #TOFIX
         self->countset = (long **)calloc(max_hash+1, sizeof(long *));
@@ -64,22 +65,21 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
             long **counts;
             int j;
             if(s.glen){
-                counts = count_short_words(filename, s.slen);
-                long total_index = 1ul << (2 * s.slen);
-                for(j=s.slen-1; j>=0; j--){
-                    self->countset[j] = counts[j];
-                    self->totals[j] = *(counts[j] + total_index);
-                    total_index >>= 2;
-                }
-            }else{
                 counts = count_bipart_words(filename, s.slen,
                                             s.pos, s.glen);
                 long total_index = 1ul << (2 * s.slen);
-                int len = s.slen-s.pos;
-                for(j=0; j<len; j++){
-                    self->countset[s.hash-j] = counts[len-j-1];
-                    self->totals[s.hash-j] = *(counts[len-j-1] +
-                                               total_index);
+                int num = s.slen-s.pos;
+                for(j=0; j<num; j++){
+                    self->countset[s.hash-j] = counts[j];
+                    self->totals[s.hash-j] = *(counts[j] + total_index);
+                    total_index >>= 2;
+                }
+            }else{
+                counts = count_short_words(filename, s.slen);
+                long total_index = 1ul << (2 * s.slen);
+                for(j=0; j<s.slen; j++){
+                    self->countset[s.slen-j] = counts[j];
+                    self->totals[s.slen-j] = *(counts[j] + total_index);
                     total_index >>= 2;
                 }
             }
@@ -87,6 +87,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
         }
         self->structs = structs;
         self->structs_num = structs_num;
+        //free(filename);
     }
     return 0;
 }
@@ -113,19 +114,19 @@ static void Counts_dealloc(Counts *self){
 
 static PyObject *Counts_get_count(Counts *self, PyObject *args,
                                   PyObject *kwds){
-    PyObject *dsite_list;
+    PyObject *dsite_seq;
     int struct_hash = 1;
-    if(!PyArg_ParseTuple(args, "O|i", &dsite_list, &struct_hash))
+    if(!PyArg_ParseTuple(args, "O|i", &dsite_seq, &struct_hash))
         return NULL;
     else{
         long *counts;
         counts = self->countset[struct_hash];
         long count = 0;
-        int dsite_num = PyList_Size(dsite_list);
+        int dsite_num = PySequence_Size(dsite_seq);
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(PyList_GetItem(dsite_list, i));
+            dsite = PyInt_AsLong(PySequence_GetItem(dsite_seq, i));
             count += counts[dsite];
         }
         return Py_BuildValue("l", count);
@@ -134,19 +135,19 @@ static PyObject *Counts_get_count(Counts *self, PyObject *args,
 
 static PyObject *Counts_get_freq(Counts *self, PyObject *args,
                                  PyObject *kwds){
-    PyObject *dsite_list;
+    PyObject *dsite_seq;
     int struct_hash = 1;
-    if(!PyArg_ParseTuple(args, "O|i", &dsite_list, &struct_hash))
+    if(!PyArg_ParseTuple(args, "O|i", &dsite_seq, &struct_hash))
         return NULL;
     else{
         long *counts;
         counts = self->countset[struct_hash];
         long count = 0;
-        int dsite_num = PyList_Size(dsite_list);
+        int dsite_num = PySequence_Size(dsite_seq);
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(PyList_GetItem(dsite_list, i));
+            dsite = PyInt_AsLong(PySequence_GetItem(dsite_seq, i));
             count += counts[dsite];
         }
         double freq = (double) count;
@@ -170,13 +171,13 @@ static PyObject *Counts_get_total(Counts *self, PyObject *args,
 static PyMethodDef Counts_methods[] = {
     {
         "get_count", (PyCFunction)Counts_get_count, METH_VARARGS,
-        "get_count help"
+        "get_count(dsite, [struct_hash]) -> int"
     }, {
         "get_freq", (PyCFunction)Counts_get_freq, METH_VARARGS,
-        "get_freq help"
+        "get_freq(dsite, [struct_hash]) -> float"
     }, {
         "get_total", (PyCFunction)Counts_get_total, METH_VARARGS,
-        "get_total help"
+        "get_total([struct_hash]) -> int"
     }, {NULL}
 };
 
@@ -202,7 +203,7 @@ static PyTypeObject CountsType = {
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "Counts help",              /*tp_doc*/
+    "Counts(filename, struct_tuple)",         /*tp_doc*/
     0,                          /*tp_traverse*/
     0,                          /*tp_clear*/
     0,                          /*tp_richcompare*/
