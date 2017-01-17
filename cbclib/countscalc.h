@@ -1,6 +1,10 @@
 #ifndef COUNTWORDS
 #define COUNTWORDS
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <zlib.h>
+
 int error_type;
 const int FILE_ERROR;
 const int MEMMORY_ERROR;

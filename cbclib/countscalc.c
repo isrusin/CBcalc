@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <zlib.h>
-
 #include "countscalc.h"
 
 int error_type = 0;
