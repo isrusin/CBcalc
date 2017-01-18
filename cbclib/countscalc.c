@@ -2,7 +2,7 @@
 
 int error_type = 0;
 const int FILE_ERROR = 1;
-const int MEMMORY_ERROR = 2;
+const int MEMORY_ERROR = 2;
 char *error_message = NULL;
 
 int translate(char nucl){
@@ -226,8 +226,8 @@ long **count_short_words(char *filename, int len){
     long **counts;
     counts = (long **)calloc(len, sizeof(long *));
     if(!counts){
-        error_type = MEMMORY_ERROR;
-        error_message = "can't allocate memmory for count pointers";
+        error_type = MEMORY_ERROR;
+        error_message = "can't allocate memory for count pointers";
         return NULL;
     }
     int i;
@@ -235,8 +235,8 @@ long **count_short_words(char *filename, int len){
     for(i = 0; i < len; i ++){
         counts[i] = (long *)calloc(num + 1, sizeof(long));// +1 for total
         if(!counts[i]){
-            error_type = MEMMORY_ERROR;
-            error_message = "can't allocate memmory for counts";
+            error_type = MEMORY_ERROR;
+            error_message = "can't allocate memory for counts";
             return NULL;
         }
         num >>= 2;
@@ -277,8 +277,8 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
     long **counts;
     counts = (long **)calloc(dlen, sizeof(long *));
     if(!counts){
-        error_type = MEMMORY_ERROR;
-        error_message = "can't allocate memmory for count pointers";
+        error_type = MEMORY_ERROR;
+        error_message = "can't allocate memory for count pointers";
         return NULL;
     }
     int i;
@@ -286,8 +286,8 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
     for(i = 0; i < dlen; i ++){
         counts[i] = (long *)calloc(num + 1, sizeof(long));// +1 for total
         if(!counts[i]){
-            error_type = MEMMORY_ERROR;
-            error_message = "can't allocate memmory for counts";
+            error_type = MEMORY_ERROR;
+            error_message = "can't allocate memory for counts";
             return NULL;
         }
         num >>= 2;

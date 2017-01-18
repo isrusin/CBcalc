@@ -2,6 +2,11 @@
 
 #include "countscalc.h"
 
+extern char* error_message;
+extern int error_type;
+extern const int FILE_ERROR;
+extern const int MEMORY_ERROR;
+
 const int MAX_LENGTH = 14;
 const int MAX_GAP_LENGTH = 14;
 
@@ -72,6 +77,15 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                                             s.pos, s.glen);
             else
                 counts = count_short_words(filename, s.slen);
+            if(!counts){
+                if(error_type == FILE_ERROR)
+                    PyErr_SetString(PyExc_IOError, error_message);
+                else if(error_type == MEMORY_ERROR)
+                    PyErr_NoMemory();
+                else
+                    PyErr_SetString(PyExc_Exception, "unkown error");
+                return -1;
+            }
             long total_index = 1ul << (2 * s.slen);
             int num = s.slen-s.pos;
             int j;
@@ -81,6 +95,11 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 total_index >>= 2;
             }
             free(counts);
+        }
+        if(!self->totals[1]){
+            PyErr_SetString(PyExc_ValueError,
+                            "input file contains no sequence");
+            return -1;
         }
         self->countset[0] = &(self->totals[1]); /* empty site count
                                 is equal to total length in nucls */

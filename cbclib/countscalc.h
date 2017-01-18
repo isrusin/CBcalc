@@ -7,7 +7,7 @@
 
 int error_type;
 const int FILE_ERROR;
-const int MEMMORY_ERROR;
+const int MEMORY_ERROR;
 char *error_message;
 
 

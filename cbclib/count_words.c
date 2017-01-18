@@ -7,7 +7,7 @@
 extern char* error_message;
 extern int error_type;
 extern const int FILE_ERROR;
-extern const int MEMMORY_ERROR;
+extern const int MEMORY_ERROR;
 
 void site_to_string(unsigned long, int, char *);
 void print_counts(FILE *, int, int, int, long **);
@@ -46,8 +46,8 @@ int main(int argc, char **argv){
     if(!counts){
         if(error_type == FILE_ERROR)
             printf("Input file error: %s\n", error_message);
-        else if(error_type == MEMMORY_ERROR)
-            printf("Memmory error: %s\n", error_message);
+        else if(error_type == MEMORY_ERROR)
+            printf("Memory error: %s\n", error_message);
         else
             printf("Unknown error\n");
         return 1;
