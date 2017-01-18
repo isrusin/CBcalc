@@ -19,11 +19,11 @@ def make_output_stubs(methods):
         headers -- output table headers as string
         row_stub -- output table row stub to use with str.format()
     """
-    headers = "ID\tSite\tNo\t"
+    headers = "Sequence ID\tSite\tObserved\t"
     row_stub = "{id}\t{site}\t{num:d}\t"
     for method in methods:
-        headers += "%se\t%sr\t" % (method, method)
-        row_stub += "{%se:.2f}\t{%sr:.3f}\t" % (method, method)
+        headers += "Expected (%s)\tRatio (%s)\t" % (method, method)
+        row_stub += "{%sexp:.2f}\t{%srat:.3f}\t" % (method, method)
     headers += "Total\n"
     row_stub += "{total:.0f}\n"
     return headers, row_stub
@@ -84,8 +84,8 @@ def cbcalc(sid, row_stub, sites, counts, methods):
         for method in methods:
             wsite = wrapped[index]
             exp = wsite.calc_expected(counts)
-            vals["%ce" % method] = exp
-            vals["%cr" % method] = obs / (exp or float("NaN"))
+            vals["%sexp" % method] = exp
+            vals["%srat" % method] = obs / (exp or float("NaN"))
             index += 1
         rows.append(row_stub.format(**vals))
     return rows
@@ -130,6 +130,10 @@ def main(argv=None):
         the arguments determines column order of the output file. If
         no method is specified, default set (mmax, pevzner, karlin)
         will be used."""
+    )
+    method_group.add_argument(
+        "-B", "--bernoulli", dest="methods", action="append_const",
+        const="B", help="Bernoulli model based method"
     )
     method_group.add_argument(
         "-M", "--mmax", dest="methods", action="append_const",
