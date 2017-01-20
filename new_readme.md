@@ -68,12 +68,12 @@ Calculate compositional biases for sites `GATC` and `GANNTC` in all files from t
 ```
 cbcalc.py -MMMo repeated_columns.tsv fasta_dir/{}.fa -i seq_id.list
 ```
-Calculate compositional biases with `M` method for each file in `fasta\_dir` named X.fa where X is a sequence ID from `acs.list` and write the resulted table with triple repeated "Expected (M)" and "Ratio (M)" columns to STDOUT, list of sites will be obtained from STDIN.
+Calculate compositional biases with `M` method for each file in `fasta\_dir` named X.fa where X is a sequence ID from `acs.list` and write the resulted table with triple repeated "Expected (M)" and "Ratio (M)" columns to `repeated_columns.tsv`, list of sites will be obtained from STDIN.
 
 Please, try `cbcalc.py --help` for some additional details on CBcalc usage.
 
 ## Output format
-Output is a tab-separated table with single header line:
+Output is a tab-separated table with a single header line:
 ```
 ID <TAB> Site <TAB> Observed <TAB> (Expected (X) <TAB> Ratio (X) <TAB>) Total
 ```
@@ -81,7 +81,7 @@ ID <TAB> Site <TAB> Observed <TAB> (Expected (X) <TAB> Ratio (X) <TAB>) Total
 __ID__ is a sequence name, __Site__ is a target word (or pattern), __Observed__ is a number of word occurrences in the sequence, __Expected (X)__ is the expected number of word occurrences estimated with method X, __Ratio (X)__ is the ratio of the __Observed__ to the __Expected (X)__, __Total__ is a value very likes sequence length but corrected by word length (the sequence is treated as a linear one). The number and the order of __Expected__ and __Ratio__ columns are determined by the number and the order of correcponding options of the command line.
 
 ## Web-interface
-[Web-interface](http://mouse.belozersky.msu.ru/tools/cbcalc) could be used for single sequence requests.
+[Web-interface](http://mouse.belozersky.msu.ru/tools/cbcalc) could be used for single-sequence requests.
 
 ## Requirements
 * Python 2.7
