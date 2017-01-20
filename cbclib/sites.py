@@ -1,15 +1,17 @@
-"""Site wrappers implementing contrast calculation methods.
+"""Site wrappers implementing compositional bias calculation methods.
 
-Contains site wrappers, function for site digitizing, and dumper-loader
-functions for wrapped site collections.
+The module contains site wrappers, function for site digitizing, and
+dumper-loader functions for wrapped site collections.
 """
 
 import cPickle
 from decimal import Decimal
 
 __all__ = [
-    "digitize", "dump_site_list", "load_site_list", "get_structs", "Site",
-    "MarkovSite", "PevznerSite", "KarlinSite", "get_wrapper_by_abbr"
+    "hash_struct", "digitize",
+    "Site", "MarkovSite", "PevznerSite", "KarlinSite",
+    "dump_site_list", "load_site_list",
+    "get_wrapper_by_abbr", "get_structs"
 ]
 
 NUCLS = {"A": 0, "C": 1, "G": 2, "T": 3}
@@ -83,21 +85,6 @@ def digitize(site, gap_position=0, gap_length=0):
     gap_position -= begin
     struct_hash = hash_struct(length, gap_position, gap_length)
     return sites, struct_hash
-
-def _degenerate(start, arr_site, eff_length,
-                curr_list, next_list, gap_position, gap_length):
-    """Recursively degenerate the given site."""
-    if eff_length == 1:
-        return
-    for index in range(start, len(arr_site)):
-        if arr_site[index] == "N":
-            continue
-        removed = arr_site[index]
-        arr_site[index] = "N"
-        curr_list.append(digitize(arr_site, gap_position, gap_length))
-        _degenerate(index+1, arr_site, eff_length-1,
-                    next_list, curr_list, gap_position, gap_length)
-        arr_site[index] = removed
 
 class Site(object):
 
@@ -383,6 +370,21 @@ class PevznerSite(Site):
         for _site in self.single_n:
             numerator *= counts.get_count(*_site)
         return pow(numerator, 2.0/self.eff_length) / divisor
+
+def _degenerate(start, arr_site, eff_length,
+                curr_list, next_list, gap_position, gap_length):
+    """Recursively degenerate the given site."""
+    if eff_length == 1:
+        return
+    for index in range(start, len(arr_site)):
+        if arr_site[index] == "N":
+            continue
+        removed = arr_site[index]
+        arr_site[index] = "N"
+        curr_list.append(digitize(arr_site, gap_position, gap_length))
+        _degenerate(index+1, arr_site, eff_length-1,
+                    next_list, curr_list, gap_position, gap_length)
+        arr_site[index] = removed
 
 class KarlinSite(Site):
 
