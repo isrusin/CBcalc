@@ -189,13 +189,33 @@ static PyObject *Counts_get_total(Counts *self, PyObject *args,
 static PyMethodDef Counts_methods[] = {
     {
         "get_count", (PyCFunction)Counts_get_count, METH_VARARGS,
-        "get_count(dsite, [struct_hash]) -> int"
+        "get_count(dsite, [struct_hash]) -> int\n\n"
+        "Get number of occurences of the site.\n\n"
+        "Arguments:\n"
+        "    dsite -- the list of degenerate versions (words) of the\n"
+        "             site in the digital form\n"
+        "    struct_hash -- the hash of the site structure\n\n"
+        "Returns:\n"
+        "    int -- sum of counts of degenerate versions of the site\n"
     }, {
         "get_freq", (PyCFunction)Counts_get_freq, METH_VARARGS,
-        "get_freq(dsite, [struct_hash]) -> float"
+        "get_freq(dsite, [struct_hash]) -> float\n\n"
+        "Get frequency of the site.\n\n"
+        "Arguments:\n"
+        "    dsite -- the list of degenerate versions of the site in the\n"
+        "             digital form\n"
+        "    struct_hash -- the hash of the site structure\n\n"
+        "Returns:\n"
+        "    float -- sum of counts of degenerate versions of the site\n"
+        "             normalized by the total count\n\n"
     }, {
         "get_total", (PyCFunction)Counts_get_total, METH_VARARGS,
-        "get_total([struct_hash]) -> int"
+        "get_total([struct_hash]) -> int\n\n"
+        "Get total count of all words of the given structure.\n\n"
+        "Arguments:\n"
+        "    struct_hash -- the hash of the word structure\n\n"
+        "Returns:\n"
+        "    int -- total count of all words of the given structure\n\n"
     }, {NULL}
 };
 
@@ -221,7 +241,13 @@ static PyTypeObject CountsType = {
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "Counts(filename, struct_tuple)",         /*tp_doc*/
+    "Counts(filename, struct_tuple)\n\n"
+    "Wrapper class for word counts.\n\n"
+    "Arguments:\n"
+    "    filename -- full name of the fasta file with genome sequence\n"
+    "    struct_tuple -- a list of word structures to calculate counts\n"
+    "                    for; word structure is a tuple (length,\n"
+    "                    gap_position, gap_length)\n", /*tp_doc*/
     0,                          /*tp_traverse*/
     0,                          /*tp_clear*/
     0,                          /*tp_richcompare*/
@@ -255,7 +281,13 @@ initcounts(void){
     CountsType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&CountsType) < 0)
         return;
-    counts = Py_InitModule3("counts", counts_methods, "module help");
+    counts = Py_InitModule3("counts", counts_methods,
+        "a module for calculation of word counts.\n\n"
+        "The module contains the only class `Counts` wich gets a fasta\n"
+        "file name and a list of word structures to calculate counts for\n"
+        "in its constructor. The calculated values are available with\n"
+        "`get_count`, `get_freq`, and `get_total` methods.\n"
+    );
     Py_INCREF(&CountsType);
     PyModule_AddObject(counts, "Counts", (PyObject *)&CountsType);
 }
