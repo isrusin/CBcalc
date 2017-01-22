@@ -1,7 +1,8 @@
-"""Site wrappers implementing compositional bias calculation methods.
+"""a module for compositional bias calculation.
 
 The module contains site wrappers, function for site digitizing, and
-dumper-loader functions for wrapped site collections.
+dumper-loader functions for wrapped site collections. Each wrapper class
+implements a method of compositional bias calculation.
 """
 
 import cPickle
