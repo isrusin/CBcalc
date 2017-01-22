@@ -7,7 +7,7 @@ from os.path import basename
 import cbclib.sites
 from cbclib.counts import Counts
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 def make_output_stubs(methods):
     """Make headers and row stub for output table.
@@ -95,8 +95,8 @@ def main(argv=None):
     parser = ap.ArgumentParser(
         description="CBcalc - Compositional Bias calculation.",
         add_help=False, usage="\n    %(prog)s ".join([
-            "", "--help", "--version", "[-soMPK] FASTA [FASTA ...]",
-            "[-soMPK] PATH -i LIST"
+            "", "--help", "--version", "[-soBMPK] FASTA [FASTA ...]",
+            "[-soBMPK] PATH -i LIST"
         ])
     )
     parser.add_argument(
@@ -150,7 +150,7 @@ def main(argv=None):
     )
     parser.add_argument(
         "-v", "--version", action="version",
-        version="%(prog)s " + __version__, help=ap.SUPPRESS
+        version=("CBcalc v%s" % __version__), help=ap.SUPPRESS
     )
     parser.add_argument(
         "-h", "-?", "-help", "--help", action="help",
