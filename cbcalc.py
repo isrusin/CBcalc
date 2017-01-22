@@ -7,7 +7,7 @@ from os.path import basename
 import cbclib.sites
 from cbclib.counts import Counts
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 def make_output_stubs(methods):
     """Make headers and row stub for output table.
