@@ -150,7 +150,7 @@ def main(argv=None):
     )
     parser.add_argument(
         "-v", "--version", action="version",
-        version="%(prog)s " + __version__, help=ap.SUPPRESS
+        version=("CBcalc v%s" % __version__), help=ap.SUPPRESS
     )
     parser.add_argument(
         "-h", "-?", "-help", "--help", action="help",
