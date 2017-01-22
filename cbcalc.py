@@ -95,8 +95,8 @@ def main(argv=None):
     parser = ap.ArgumentParser(
         description="CBcalc - Compositional Bias calculation.",
         add_help=False, usage="\n    %(prog)s ".join([
-            "", "--help", "--version", "[-soMPK] FASTA [FASTA ...]",
-            "[-soMPK] PATH -i LIST"
+            "", "--help", "--version", "[-soBMPK] FASTA [FASTA ...]",
+            "[-soBMPK] PATH -i LIST"
         ])
     )
     parser.add_argument(
