@@ -1,5 +1,5 @@
 from distutils.core import setup, Extension
-from cbcalc import __version__
+from cbclib import __version__
 
 setup(
     name="cbclib", version=__version__,

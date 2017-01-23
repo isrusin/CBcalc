@@ -31,4 +31,6 @@ The pipeline sketch:
              [OUTPUT] <--(calculating compositional biases)--'
 """
 
-__all__ = ["counts", "sites"]
+__all__ = ["counts", "sites", "version"]
+
+from .version import full_version as __version__
