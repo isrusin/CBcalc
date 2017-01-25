@@ -5,6 +5,7 @@
 import argparse
 import sys
 from os.path import basename
+from multiprocessing import Process, Value, Lock, Pipe
 
 import cbclib.sites
 from cbclib.counts import Counts
@@ -86,6 +87,28 @@ def cbcalc(sites, counts):
         vals.append(tuple(row_vals))
     return vals
 
+class CBcalcProcess(Process):
+    def __init__(self, index, seqs, sites, structs, locked_pipe):
+        super(CBcalcProcess, self).__init__()
+        self.index = index
+        self.seqs = seqs
+        self.sites = sites
+        self.structs = structs
+        self.oulock, self.oupipe = locked_pipe
+
+    def run(self):
+        while self.index.value < len(self.seqs):
+            with self.index.get_lock():
+                index = self.index.value
+                self.index.value += 1
+            sid, fasta = self.seqs[index]
+            counts = Counts(fasta, self.structs)
+            vals = cbcalc(self.sites, counts)
+            with self.oulock:
+                self.oupipe.send((sid, vals))
+        with self.oulock:
+            self.oupipe.send(("", []))
+
 def main(argv=None):
     """Main function.
 
@@ -123,6 +146,11 @@ def main(argv=None):
         "-o", "--out", dest="outsv", metavar="FILE",
         type=argparse.FileType('w'), default=sys.stdout,
         help="Output tabular (.tsv) file, default is stdout."
+    )
+    parser.add_argument(
+        "-m", "--threads", dest="proc_num", metavar="N", type=int,
+        default=1, help="""A number of subprocesses to use, should not
+        exceed the number of the input fasta files; default is 1."""
     )
     method_group = parser.add_argument_group(
         description="""Folowing arguments determine which methods of
@@ -176,10 +204,34 @@ def main(argv=None):
     structs = cbclib.sites.get_structs([_s[0] for _s in sites], methodset)
     with args.outsv as outsv:
         outsv.write(headers)
-        for sid, seq in zip(sids, seqs):
-            counts = Counts(seq, structs)
-            vals = cbcalc(sites, counts)
-            outsv.writelines([row_stub.format(sid, *row) for row in vals])
+        fastas = zip(sids, seqs)
+        if args.proc_num > 1:
+            reciver, sender = Pipe(False)
+            locked_sender = (Lock(), sender)
+            index = Value("i", 0)
+            working = args.proc_num
+            for _i in range(working):
+                proc = CBcalcProcess(
+                    index, fastas, sites, structs, locked_sender
+                )
+                proc.start()
+            while working:
+                reciver.poll(None)
+                sid, vals = reciver.recv()
+                if sid:
+                    outsv.writelines([
+                        row_stub.format(sid, *row) for row in vals
+                    ])
+                else:
+                    working -= 1
+            reciver.close()
+        else:
+            for sid, seq in fastas:
+                counts = Counts(seq, structs)
+                vals = cbcalc(sites, counts)
+                outsv.writelines([
+                    row_stub.format(sid, *row) for row in vals
+                ])
 
 
 if __name__ == "__main__":
