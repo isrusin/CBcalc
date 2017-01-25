@@ -5,6 +5,7 @@
 import argparse
 import sys
 from os.path import basename
+from multiprocessing import Process
 
 import cbclib.sites
 from cbclib.counts import Counts
@@ -86,6 +87,13 @@ def cbcalc(sites, counts):
         vals.append(tuple(row_vals))
     return vals
 
+class CBcalcProcess(Process):
+    def __init__(self):
+        super(CBcalcProcess, self).__init__(self)
+
+    def run(self):
+        pass
+
 def main(argv=None):
     """Main function.
 
@@ -123,6 +131,11 @@ def main(argv=None):
         "-o", "--out", dest="outsv", metavar="FILE",
         type=argparse.FileType('w'), default=sys.stdout,
         help="Output tabular (.tsv) file, default is stdout."
+    )
+    parser.add_argument(
+        "-m", "--threads", dest="proc_num", metavar="N", type=int,
+        default=1, help="""A number of subprocesses to use, should not
+        exceed the number of the input fasta files; default is 1."""
     )
     method_group = parser.add_argument_group(
         description="""Folowing arguments determine which methods of
