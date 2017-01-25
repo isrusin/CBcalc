@@ -41,10 +41,10 @@ def wrap_sites(raw_sites, methods, maxlen=10):
         maxlen (optional) -- site length cutoff, default 10
 
     Returns:
-        wrapped_sites -- a list of tuples, each contains wrapped
-                         versions of a site for each method
-        unwrapped_sites -- a dict which contains reason to skip for every
-                           unwrapped raw site
+        list -- a list of tuples, each contains wrapped versions of the
+                site for each method
+        dict -- a dict of unwrapped raw sites with reasons why they were
+                skipped
     """
     wrapped_sites = []
     unwrapped_sites = {}
@@ -69,7 +69,7 @@ def cbcalc(sites, counts):
         counts -- cbclib.counts.Counts instance
 
     Returns:
-        list of tuples of calculated values
+        list - a list of tuples of calculated values
     """
     vals = []
     for wrapped in sites:
@@ -109,7 +109,7 @@ def main(argv=None):
         positional argument as PATH stub."""
     )
     parser.add_argument(
-        "_none", metavar="PATH", nargs="?",# only to make up help message
+        "_none", metavar="PATH", nargs="?", #to make up the help message
         help="""Input .fasta files path stub with '{}' placeholder for
         sequence IDs, which are listed in a LIST file specified with
         -i/--id option."""
