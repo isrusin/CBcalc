@@ -2,12 +2,12 @@
 
 """Compositional Bias calculation tool."""
 
-import argparse as _ap
-import sys as _sys
-from os.path import basename as _basename
+import argparse
+import sys
+from os.path import basename
 
-import cbclib.sites as _sites
-from cbclib.counts import Counts as _Counts
+import cbclib.sites
+from cbclib.counts import Counts
 from cbclib import __version__
 
 def make_output_stubs(methods):
@@ -48,7 +48,7 @@ def wrap_sites(raw_sites, methods, maxlen=10):
     for raw_site in raw_sites:
         wrapped_site = []
         for method in methods:
-            Wrapper = _sites.get_wrapper_by_abbr(method)
+            Wrapper = cbclib.sites.get_wrapper_by_abbr(method)
             try:
                 wrapped_site.append(Wrapper(raw_site, maxlen))
             except ValueError as error:
@@ -94,7 +94,7 @@ def main(argv=None):
 
     Parse CLI arguments and execute `cbcalc` function.
     """
-    parser = _ap.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="CBcalc - Compositional Bias calculation.",
         add_help=False, usage="\n    %(prog)s ".join([
             "", "--help", "--version", "[-soBMPK] FASTA [FASTA ...]",
@@ -107,8 +107,8 @@ def main(argv=None):
     )
     parser.add_argument(
         "-i", "--id", dest="insids", metavar="LIST",
-        type=_ap.FileType("r"), help="""Input LIST file with sequence IDs;
-        makes CBcalc to treat the first (and the only in the case)
+        type=argparse.FileType("r"), help="""Input LIST file with sequence
+        IDs; makes CBcalc to treat the first (and the only in the case)
         positional argument as PATH stub."""
     )
     parser.add_argument(
@@ -119,12 +119,12 @@ def main(argv=None):
     )
     parser.add_argument(
         "-s", "--site", dest="instl", metavar="LIST",
-        type=_ap.FileType('r'), default=_sys.stdin,
+        type=argparse.FileType('r'), default=sys.stdin,
         help="File with a list of sites, one-per-line, default is stdin."
     )
     parser.add_argument(
         "-o", "--out", dest="outsv", metavar="FILE",
-        type=_ap.FileType('w'), default=_sys.stdout,
+        type=argparse.FileType('w'), default=sys.stdout,
         help="Output tabular (.tsv) file, default is stdout."
     )
     method_group = parser.add_argument_group(
@@ -136,27 +136,27 @@ def main(argv=None):
     )
     method_group.add_argument(
         "-B", "--bernoulli", dest="methods", action="append_const",
-        const=_sites.Site.abbr, help="Bernoulli model based method"
+        const=cbclib.sites.Site.abbr, help="Bernoulli model based method"
     )
     method_group.add_argument(
         "-M", "--mmax", dest="methods", action="append_const",
-        const=_sites.MarkovSite.abbr, help="Mmax based method"
+        const=cbclib.sites.MarkovSite.abbr, help="Mmax based method"
     )
     method_group.add_argument(
         "-P", "--pevzner", dest="methods", action="append_const",
-        const=_sites.PevznerSite.abbr, help="Pevzner's method"
+        const=cbclib.sites.PevznerSite.abbr, help="Pevzner's method"
     )
     method_group.add_argument(
         "-K", "--karlin", dest="methods", action="append_const",
-        const=_sites.KarlinSite.abbr, help="Karlin's method"
+        const=cbclib.sites.KarlinSite.abbr, help="Karlin's method"
     )
     parser.add_argument(
         "-v", "--version", action="version",
-        version=("CBcalc v%s" % __version__), help=_ap.SUPPRESS
+        version=("CBcalc v%s" % __version__), help=argparse.SUPPRESS
     )
     parser.add_argument(
         "-h", "-?", "-help", "--help", action="help",
-        help=_ap.SUPPRESS
+        help=argparse.SUPPRESS
     )
     args = parser.parse_args(argv)
     if args.insids is not None:
@@ -165,25 +165,25 @@ def main(argv=None):
         seqs = [args.inseq[0].format(sid) for sid in sids]
     else:
         seqs = args.inseq
-        sids = [_basename(seq).split(".fasta")[0] for seq in seqs]
+        sids = [basename(seq).split(".fasta")[0] for seq in seqs]
     methods = args.methods or [
-        _sites.MarkovSite.abbr,
-        _sites.PevznerSite.abbr,
-        _sites.KarlinSite.abbr
+        cbclib.sites.MarkovSite.abbr,
+        cbclib.sites.PevznerSite.abbr,
+        cbclib.sites.KarlinSite.abbr
     ]
     headers, row_stub = make_output_stubs(methods)
     methods = sorted(set(methods))
     with args.instl as instl:
         raw_sites = instl.read().split()
     sites, unwrapped = wrap_sites(raw_sites, methods)
-    structs = _sites.get_structs([_s[0] for _s in sites], methods)
+    structs = cbclib.sites.get_structs([_s[0] for _s in sites], methods)
     with args.outsv as outsv:
         outsv.write(headers)
         for sid, seq in zip(sids, seqs):
-            counts = _Counts(seq, structs)
+            counts = Counts(seq, structs)
             rows = cbcalc(sid, row_stub, sites, counts, methods)
             outsv.writelines(rows)
 
 
 if __name__ == "__main__":
-    _sys.exit(main())
+    sys.exit(main())
