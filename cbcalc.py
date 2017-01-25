@@ -10,23 +10,26 @@ import cbclib.sites
 from cbclib.counts import Counts
 from cbclib import __version__
 
-def make_output_stubs(methods):
+def make_output_stubs(methods, methodset):
     """Make headers and row stub for output table.
 
     Arguments:
         methods -- a list of method abbreviations from cbclib.sites
+        methodset -- sorted set of methods
 
     Returns:
-        headers -- output table headers as string
-        row_stub -- output table row stub to use with str.format()
+        string -- output table headers
+        string -- output table row stub to use with str.format()
     """
     headers = "Sequence ID\tSite\tObserved\t"
-    row_stub = "{id}\t{site}\t{num:d}\t"
+    row_stub = "{0}\t{1}\t{2:d}\t"
+    method_dict = dict([(m, 4+i*2) for i, m in enumerate(methodset)])
     for method in methods:
-        headers += "Expected (%s)\tRatio (%s)\t" % (method, method)
-        row_stub += "{%sexp:.2f}\t{%srat:.3f}\t" % (method, method)
+        headers += "Expected ({0})\tRatio ({0})\t".format(method)
+        index = method_dict[method]
+        row_stub += "{{{}:.2f}}\t{{{}:.3f}}\t".format(index, index+1)
     headers += "Total\n"
-    row_stub += "{total:.0f}\n"
+    row_stub += "{3:.0f}\n"
     return headers, row_stub
 
 def wrap_sites(raw_sites, methods, maxlen=10):
@@ -58,36 +61,30 @@ def wrap_sites(raw_sites, methods, maxlen=10):
             wrapped_sites.append(tuple(wrapped_site))
     return wrapped_sites, unwrapped_sites
 
-def cbcalc(sid, row_stub, sites, counts, methods):
-    """Calculate values for sites and return formatted output table rows.
+def cbcalc(sites, counts):
+    """Calculate values for the sites by the counts.
 
     Arguments:
-        sid -- sequence ID to put into 'ID' column of the output table
-        row_stub -- stub of table row to use in str.format
         sites -- a list of wrapped sites obtained with wrap_sites()
         counts -- cbclib.counts.Counts instance
-        methods -- a list of method abbreviations from cbclib.sites
 
     Returns:
-        rows -- a list of formatted rows of the output table
+        list of tuples of calculated values
     """
-    rows = []
-    vals = {"id": sid}
+    vals = []
     for wrapped in sites:
-        index = 0
-        wsite = wrapped[index]
-        vals["site"] = wsite.str_init
-        vals["total"] = counts.get_total(wsite.struct_hash)
+        row_vals = []
+        wsite = wrapped[0]
+        row_vals.append(wsite.str_init)
         obs = wsite.calc_observed(counts)
-        vals["num"] = obs
-        for method in methods:
-            wsite = wrapped[index]
+        row_vals.append(obs)
+        row_vals.append(counts.get_total(wsite.struct_hash))
+        for wsite in wrapped:
             exp = wsite.calc_expected(counts)
-            vals["%sexp" % method] = exp
-            vals["%srat" % method] = obs / (exp or float("NaN"))
-            index += 1
-        rows.append(row_stub.format(**vals))
-    return rows
+            row_vals.append(exp)
+            row_vals.append(obs / (exp or float("NaN")))
+        vals.append(tuple(row_vals))
+    return vals
 
 def main(argv=None):
     """Main function.
@@ -166,23 +163,23 @@ def main(argv=None):
     else:
         seqs = args.inseq
         sids = [basename(seq).split(".fasta")[0] for seq in seqs]
-    methods = args.methods or [
+    methods_order = args.methods or [
         cbclib.sites.MarkovSite.abbr,
         cbclib.sites.PevznerSite.abbr,
         cbclib.sites.KarlinSite.abbr
     ]
-    headers, row_stub = make_output_stubs(methods)
-    methods = sorted(set(methods))
+    methodset = sorted(set(methods_order))
+    headers, row_stub = make_output_stubs(methods_order, methodset)
     with args.instl as instl:
         raw_sites = instl.read().split()
-    sites, unwrapped = wrap_sites(raw_sites, methods)
-    structs = cbclib.sites.get_structs([_s[0] for _s in sites], methods)
+    sites, _unwrapped = wrap_sites(raw_sites, methodset)
+    structs = cbclib.sites.get_structs([_s[0] for _s in sites], methodset)
     with args.outsv as outsv:
         outsv.write(headers)
         for sid, seq in zip(sids, seqs):
             counts = Counts(seq, structs)
-            rows = cbcalc(sid, row_stub, sites, counts, methods)
-            outsv.writelines(rows)
+            vals = cbcalc(sites, counts)
+            outsv.writelines([row_stub.format(sid, *row) for row in vals])
 
 
 if __name__ == "__main__":
