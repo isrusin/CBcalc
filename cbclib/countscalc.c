@@ -222,6 +222,7 @@ long **count_short_words(char *filename, int len){
         error_message = "can't open fasta file";
         return NULL;
     }
+    gzbuffer(fasta, 131072u); //128K
 
     long **counts;
     counts = (long **)calloc(len, sizeof(long *));
@@ -268,6 +269,7 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
         error_message = "can't open fasta file";
         return NULL;
     }
+    gzbuffer(fasta, 131072u); //128K
 
     int ulen = pos;
     int dlen = len - ulen;
