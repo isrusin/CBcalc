@@ -255,7 +255,7 @@ long **count_short_words(char *filename, int len){
         countup_short_res(&site, counts);
     }
     countup_subsites(len, 0, counts);
-    gzclose(fasta);
+    gzclose_r(fasta);
     return counts;
 }
 
@@ -307,7 +307,7 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
     }
     free(bpsite.arr);
     countup_subsites(len, ulen, counts);
-    gzclose(fasta);
+    gzclose_r(fasta);
     return counts;
 }
 
