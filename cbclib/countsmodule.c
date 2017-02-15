@@ -67,6 +67,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 max_hash = sp->hash;
         }
         // reuse of __init__ will cause memmory leak!! #TOFIX
+        // add RuntimeError raising
         self->countset = (long **)calloc(max_hash+1, sizeof(long *));
         self->totals = (long *)calloc(max_hash+1, sizeof(long));
         for(i=0; i<structs_num; i++){
@@ -83,7 +84,7 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                 else if(error_type == MEMORY_ERROR)
                     PyErr_NoMemory();
                 else
-                    PyErr_SetString(PyExc_Exception, "unkown error");
+                    PyErr_SetString(PyExc_Exception, "unknown error");
                 return -1;
             }
             long total_index = 1ul << (2 * s.slen);
