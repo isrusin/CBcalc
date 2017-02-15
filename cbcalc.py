@@ -35,7 +35,7 @@ def make_output_stubs(methodset, methods=None, nosids=False):
     start = total_index + 1
     method_dict = dict([(m, start + i*2) for i, m in enumerate(methodset)])
     for method in methods:
-        headers += "Expected ({0})\tRatio ({0})\t".format(method)
+        headers += "Expected ({0})\tO/E ratio ({0})\t".format(method)
         index = method_dict[method]
         row_stub += "{{{}:.2f}}\t{{{}:.3f}}\t".format(index, index+1)
     headers += "Total\n"
