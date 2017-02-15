@@ -46,6 +46,7 @@ def wrap_sites(raw_sites, methods, maxlen=10):
     Returns:
         list -- a list of tuples, each contains wrapped versions of the
                 site for each method
+        list -- a list of site structs to calculate counts for
         dict -- a dict of unwrapped raw sites with reasons why they were
                 skipped
     """
@@ -62,7 +63,9 @@ def wrap_sites(raw_sites, methods, maxlen=10):
                 break
         else:
             wrapped_sites.append(tuple(wrapped_site))
-    return wrapped_sites, unwrapped_sites
+    sites = [wrapped[0] for wrapped in wrapped_sites]
+    structs = cbclib.sites.get_structs(sites, methods)
+    return wrapped_sites, structs, unwrapped_sites
 
 def cbcalc(sites, counts):
     """Calculate values for the sites by the counts.
@@ -202,8 +205,7 @@ def main(argv=None):
     headers, row_stub = make_output_stubs(methodset, methods_order)
     with args.instl as instl:
         raw_sites = instl.read().split()
-    sites, _unwrapped = wrap_sites(raw_sites, methodset)
-    structs = cbclib.sites.get_structs([_s[0] for _s in sites], methodset)
+    sites, structs, _unwrapped = wrap_sites(raw_sites, methodset)
     with args.outsv as outsv:
         outsv.write(headers)
         fastas = zip(sids, seqs)
