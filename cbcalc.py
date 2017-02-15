@@ -11,17 +11,19 @@ import cbclib.sites
 from cbclib.counts import Counts
 from cbclib import __version__
 
-def make_output_stubs(methods, methodset):
+def make_output_stubs(methodset, methods=None):
     """Make headers and row stub for output table.
 
     Arguments:
-        methods -- a list of method abbreviations from cbclib.sites
-        methodset -- sorted set of methods
+        methodset -- sorted set of method abbreviations from cbclib.sites
+        methods -- a list of method abbreviations to set the order
 
     Returns:
         string -- output table headers
         string -- output table row stub to use with str.format()
     """
+    if not methods:
+        methods = methodset
     headers = "Sequence ID\tSite\tObserved\t"
     row_stub = "{0}\t{1}\t{2:d}\t"
     method_dict = dict([(m, 4+i*2) for i, m in enumerate(methodset)])
@@ -197,7 +199,7 @@ def main(argv=None):
         cbclib.sites.KarlinSite.abbr
     ]
     methodset = sorted(set(methods_order))
-    headers, row_stub = make_output_stubs(methods_order, methodset)
+    headers, row_stub = make_output_stubs(methodset, methods_order)
     with args.instl as instl:
         raw_sites = instl.read().split()
     sites, _unwrapped = wrap_sites(raw_sites, methodset)
