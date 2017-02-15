@@ -11,12 +11,13 @@ import cbclib.sites
 from cbclib.counts import Counts
 from cbclib import __version__
 
-def make_output_stubs(methodset, methods=None):
+def make_output_stubs(methodset, methods=None, nosids=False):
     """Make headers and row stub for output table.
 
     Arguments:
         methodset -- sorted set of method abbreviations from cbclib.sites
         methods -- a list of method abbreviations to set the order
+        nosids -- bool, should the output contain Sequence ID column
 
     Returns:
         string -- output table headers
@@ -26,13 +27,19 @@ def make_output_stubs(methodset, methods=None):
         methods = methodset
     headers = "Sequence ID\tSite\tObserved\t"
     row_stub = "{0}\t{1}\t{2:d}\t"
-    method_dict = dict([(m, 4+i*2) for i, m in enumerate(methodset)])
+    total_index = 3
+    if nosids:
+        headers = "Site\tObserved\t"
+        row_stub = "{0}\t{1:d}\t"
+        total_index = 2
+    start = total_index + 1
+    method_dict = dict([(m, start + i*2) for i, m in enumerate(methodset)])
     for method in methods:
         headers += "Expected ({0})\tRatio ({0})\t".format(method)
         index = method_dict[method]
         row_stub += "{{{}:.2f}}\t{{{}:.3f}}\t".format(index, index+1)
     headers += "Total\n"
-    row_stub += "{3:.0f}\n"
+    row_stub += "{%d:.0f}\n" % total_index
     return headers, row_stub
 
 def wrap_sites(raw_sites, methods, maxlen=10):
