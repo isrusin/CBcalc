@@ -67,6 +67,13 @@ int skip(gzFile fasta){
     return 0;
 }
 
+typedef struct {
+    int len;
+    unsigned long mask;
+    unsigned long val;
+    int index;
+} site_t;
+
 int initialize_short(gzFile fasta, site_t *sp){
     sp->index = 0;
     int nucl, tnucl;
@@ -159,6 +166,20 @@ long **count_short_words(char *filename, int len){
     gzclose_r(fasta);
     return counts;
 }
+
+typedef struct {
+    /*  Site     len  mask    shift  dmask   ushift
+        x(N)xxx  3    111111  6      111111  4
+        xxx(N)x  3    111111  2      11      0
+        xx(N)xx  2    1111    4      1111    0
+    */
+    int size;
+    int len;
+    unsigned int mask, dmask;
+    int shift, ushift;
+    unsigned int *arr;
+    int index;
+} bipart_t;
 
 bipart_t make_bpsite(int gap, int ulen, int dlen){
     int minlen = ulen < dlen ? ulen : dlen;
