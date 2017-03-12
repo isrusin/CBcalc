@@ -50,6 +50,17 @@ int translate(char nucl){
     }
 }
 
+int get_nucl(gzFile fasta){
+    int nucl = gzgetc(fasta);
+    int tnucl;
+    while((tnucl = translate(nucl)) < -1){
+        nucl = gzgetc(fasta);
+    }
+    if(tnucl == -1 && nucl != -1)
+        gzungetc(nucl, fasta);
+    return tnucl;
+}
+
 int skip(gzFile fasta){
     int nucl;
     while((nucl = gzgetc(fasta)) != -1){
@@ -76,40 +87,25 @@ typedef struct {
 
 int initialize_short(gzFile fasta, site_t *sp){
     sp->index = 0;
-    int nucl, tnucl;
+    int nucl;
     sp->val = 0ul;
     while(sp->index < sp->len){
-        if((nucl = gzgetc(fasta)) == -1)
+        nucl = get_nucl(fasta);
+        if(nucl == -1)
             return 0;
-        tnucl = translate(nucl);
-        if(tnucl < -1)
-            continue;
-        if(tnucl >= 0){
-            sp->val = (sp->val << 2) + tnucl;
-            sp->index ++;
-        }else{
-            gzungetc(nucl, fasta);
-            return 0;
-        }
+        sp->val = (sp->val << 2) + nucl;
+        sp->index ++;
     }
     return 1;
 }
 
 void countup_short(gzFile fasta, site_t *sp, long *counts){
-    int nucl, tnucl;
+    int nucl;
     unsigned long num_index = sp->mask + 1ul;
-    while((nucl = gzgetc(fasta)) != -1){
-        tnucl = translate(nucl);
-        if(tnucl < -1)
-            continue;
-        if(tnucl >= 0){
-            counts[num_index] ++;
-            counts[sp->val] ++;
-            sp->val = ((sp->val << 2) + tnucl) & sp->mask;
-        }else{
-            gzungetc(nucl, fasta);
-            break;
-        }
+    while((nucl = get_nucl(fasta)) != -1){
+        counts[num_index] ++;
+        counts[sp->val] ++;
+        sp->val = ((sp->val << 2) + nucl) & sp->mask;
     }
 }
 
@@ -198,64 +194,42 @@ bipart_t make_bpsite(int gap, int ulen, int dlen){
 
 int initialize_bipart(gzFile fasta, bipart_t *sp){
     unsigned int site = 0u;
-    int i, nucl, tnucl;
+    int i, nucl;
     sp->index = 0;
     for(i = 0; i < sp->len - 1;){
-        if((nucl = gzgetc(fasta)) == -1)
+        nucl = get_nucl(fasta);
+        if(nucl == -1)
             return 0;
-        tnucl = translate(nucl);
-        if(tnucl < -1)
-            continue;
-        if(tnucl >= 0){
-            site = (site << 2) + tnucl;
-            i ++;
-        }else{
-            gzungetc(nucl, fasta);
-            return 0;
-        }
+        site = (site << 2) + nucl;
+        i ++;
     }
     while(sp->index < sp->size){
-        if((nucl = gzgetc(fasta)) == -1)
+        nucl = get_nucl(fasta);
+        if(nucl == -1)
             return 0;
-        tnucl = translate(nucl);
-        if(tnucl < -1)
-            continue;
-        if(tnucl >= 0){
-            site = ((site << 2) + tnucl) & sp->mask;
-            sp->arr[sp->index] = site;
-            sp->index ++;
-        }else{
-            gzungetc(nucl, fasta);
-            return 0;
-        }
+        site = ((site << 2) + nucl) & sp->mask;
+        sp->arr[sp->index] = site;
+        sp->index ++;
     }
     return 1;
 }
 
 void countup_bipart(gzFile fasta, bipart_t *sp, long *counts){
-    int nucl, tnucl;
+    int nucl;
     unsigned int uhalf, dhalf;
     unsigned long site;
     unsigned long num_index = 1ul << (2*sp->len - sp->ushift + sp->shift);
     int index = sp->size;
-    while((nucl = gzgetc(fasta)) != -1){
-        tnucl = translate(nucl);
-        if(tnucl < -1)
-            continue;
-        if(tnucl >= 0){
-            counts[num_index] ++;
-            dhalf = sp->arr[index - 1];
-            if(index == sp->size)
-                index = 0;
-            uhalf = sp->arr[index] >> sp->ushift;
-            site = (uhalf << sp->shift) + (dhalf & sp->dmask);
-            counts[site] ++;
-            sp->arr[index] = ((dhalf << 2) + tnucl) & sp->mask;
-            index ++;
-        }else{
-            gzungetc(nucl, fasta);
-            break;
-        }
+    while((nucl = get_nucl(fasta)) != -1){
+        counts[num_index] ++;
+        dhalf = sp->arr[index - 1];
+        if(index == sp->size)
+            index = 0;
+        uhalf = sp->arr[index] >> sp->ushift;
+        site = (uhalf << sp->shift) + (dhalf & sp->dmask);
+        counts[site] ++;
+        sp->arr[index] = ((dhalf << 2) + nucl) & sp->mask;
+        index ++;
     }
     sp->index = index;
 }
