@@ -28,7 +28,7 @@ long **allocate_counts(int maxlen, int number){
     int i;
     unsigned long maxsite = (1ul << maxlen * 2);
     for(i = 0; i < number; i ++){
-        counts[i] = (long *)calloc(maxsite, sizeof(long));
+        counts[i] = (long *)calloc(maxsite + 1, sizeof(long));
         if(!counts[i]){
             error_type = MEMORY_ERROR;
             error_message = "can't allocate memory for counts";
@@ -150,9 +150,7 @@ long **count_short_words(char *filename, int len){
     site_t site;
     site.len = len;
     site.mask = (1ul << len * 2) - 1ul;
-    while(1){
-        if(skip(fasta) == 0)
-            break;
+    while(skip(fasta) != 0){
         if(initialize_short(fasta, &site)){
             countup_short(fasta, &site, counts[0]);
         }
@@ -196,12 +194,11 @@ int initialize_bipart(gzFile fasta, bipart_t *sp){
     unsigned int site = 0u;
     int i, nucl;
     sp->index = 0;
-    for(i = 0; i < sp->len - 1;){
+    for(i = 0; i < sp->len - 1; i ++){
         nucl = get_nucl(fasta);
         if(nucl == -1)
             return 0;
         site = (site << 2) + nucl;
-        i ++;
     }
     while(sp->index < sp->size){
         nucl = get_nucl(fasta);
@@ -267,9 +264,7 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
     gzFile fasta = open_fasta(filename);
     long **counts = allocate_counts(len, len - pos);
     bipart_t bpsite = make_bpsite(gap, pos, len - pos);
-    while(1){
-        if(skip(fasta) == 0)
-            break;
+    while(skip(fasta) != 0){
         int uindex = bpsite.size;
         if(initialize_bipart(fasta, &bpsite)){
             countup_bipart(fasta, &bpsite, counts[0]);
