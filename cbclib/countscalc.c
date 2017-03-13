@@ -193,19 +193,19 @@ bipart_t make_bpsite(int gap, int ulen, int dlen){
 int initialize_bipart(gzFile fasta, bipart_t *sp){
     unsigned int site = 0u;
     int i, nucl;
-    sp->index = 0;
-    for(i = 0; i < sp->len - 1; i ++){
+    sp->index = - sp->size;
+    for(i = 1; i < sp->len; i ++){
         nucl = get_nucl(fasta);
         if(nucl == -1)
             return 0;
         site = (site << 2) + nucl;
     }
-    while(sp->index < sp->size){
+    while(sp->index < 0){
         nucl = get_nucl(fasta);
         if(nucl == -1)
             return 0;
         site = ((site << 2) + nucl) & sp->mask;
-        sp->arr[sp->index] = site;
+        sp->arr[sp->size + sp->index] = site;
         sp->index ++;
     }
     return 1;
@@ -231,17 +231,16 @@ void countup_bipart(gzFile fasta, bipart_t *sp, long *counts){
     sp->index = index;
 }
 
-void countup_bipart_res(bipart_t *sp, int real_uindex, long **countsp){
+void countup_bipart_res(bipart_t *sp, long **countsp){
     unsigned long mask = sp->dmask;
     int shift = sp->shift;
-    int uindex = sp->index % sp->size;
-    int dindex = (sp->index + sp->size - 1) % sp->size;
-    while(uindex != real_uindex){
+    int uindex;
+    for(uindex = sp->index; uindex < 0; uindex ++){
         mask >>= 2;
         shift -= 2;
         countsp ++;
-        uindex ++;
     }
+    int dindex = (sp->index + sp->size - 1) % sp->size;
     unsigned long site;
     unsigned int uhalf;
     unsigned int dhalf = sp->arr[dindex];
@@ -265,12 +264,10 @@ long **count_bipart_words(char *filename, int len, int pos, int gap){
     long **counts = allocate_counts(len, len - pos);
     bipart_t bpsite = make_bpsite(gap, pos, len - pos);
     while(skip(fasta) != 0){
-        int uindex = bpsite.size;
         if(initialize_bipart(fasta, &bpsite)){
             countup_bipart(fasta, &bpsite, counts[0]);
-            uindex = bpsite.index % bpsite.size;
         }
-        countup_bipart_res(&bpsite, uindex, counts);
+        countup_bipart_res(&bpsite, counts);
     }
     free(bpsite.arr);
     countup_subsites(len, pos, counts);
