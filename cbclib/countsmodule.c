@@ -87,13 +87,18 @@ static int Counts_init(Counts *self, PyObject *args, PyObject *kwds){
                     PyErr_SetString(PyExc_Exception, "unknown error");
                 return -1;
             }
-            long total_index = 1ul << (2 * s.slen);
+            long word_limit = 1ul << (2 * s.slen);
             int num = s.slen-s.pos;
             int j;
             for(j=0; j<num; j++){
-                self->countset[s.hash-j] = counts[j];
-                self->totals[s.hash-j] = *(counts[j] + total_index);
-                total_index >>= 2;
+                long *word_counts = counts[j];
+                self->countset[s.hash-j] = word_counts;
+                int total = 0;
+                int word;
+                for(word=0; word<word_limit; word++)
+                    total += word_counts[word];
+                self->totals[s.hash-j] = total;
+                word_limit >>= 2;
             }
             free(counts);
         }

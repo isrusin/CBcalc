@@ -28,7 +28,7 @@ long **allocate_counts(int maxlen, int number){
     int i;
     unsigned long maxsite = (1ul << maxlen * 2);
     for(i = 0; i < number; i ++){
-        counts[i] = (long *)calloc(maxsite + 1, sizeof(long));
+        counts[i] = (long *)calloc(maxsite, sizeof(long));
         if(!counts[i]){
             error_type = MEMORY_ERROR;
             error_message = "can't allocate memory for counts";
@@ -101,9 +101,7 @@ int initialize_short(gzFile fasta, site_t *sp){
 
 void countup_short(gzFile fasta, site_t *sp, long *counts){
     int nucl;
-    unsigned long num_index = sp->mask + 1ul;
     while((nucl = get_nucl(fasta)) != -1){
-        counts[num_index] ++;
         counts[sp->val] ++;
         sp->val = ((sp->val << 2) + nucl) & sp->mask;
     }
@@ -116,10 +114,7 @@ void countup_short_res(site_t *sp, long **countsp){
         countsp ++;
         sp->index ++;
     }
-    unsigned long num_index;
     while(mask){
-        num_index = mask + 1ul;
-        (*countsp)[num_index] ++;
         (*countsp)[sp->val & mask] ++;
         countsp ++;
         mask >>= 2;
@@ -136,7 +131,6 @@ void countup_subsites(int len, int pos, long **countsp){
     while(depth < max_depth){
         for(site = 0ul; site < max; site ++)
             dst[site >> 2] += src[site];
-        dst[max >> 2] += src[max];
         max >>= 2;
         depth ++;
         src = countsp[depth];
@@ -215,10 +209,8 @@ void countup_bipart(gzFile fasta, bipart_t *sp, long *counts){
     int nucl;
     unsigned int uhalf, dhalf;
     unsigned long site;
-    unsigned long num_index = 1ul << (2*sp->len - sp->ushift + sp->shift);
     int index = sp->size;
     while((nucl = get_nucl(fasta)) != -1){
-        counts[num_index] ++;
         dhalf = sp->arr[index - 1];
         if(index == sp->size)
             index = 0;
@@ -244,10 +236,7 @@ void countup_bipart_res(bipart_t *sp, long **countsp){
     unsigned long site;
     unsigned int uhalf;
     unsigned int dhalf = sp->arr[dindex];
-    unsigned long num_index = ((1ul + sp->mask) >> sp->ushift) << shift;
     while(mask){
-        (*countsp)[num_index] ++;
-        num_index >>= 2;
         uindex %= sp->size;
         uhalf = sp->arr[uindex] >> sp->ushift;
         site = (uhalf << shift) + (dhalf & mask);
