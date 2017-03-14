@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 """Compositional Bias calculation tool."""
 
@@ -10,6 +10,7 @@ from multiprocessing import Process, Value, Lock, Pipe
 import cbclib.sites
 from cbclib.counts import Counts
 from cbclib import __version__
+
 
 def make_output_stubs(methodset, methods=None, nosids=False):
     """Make headers and row stub for output table.
@@ -41,6 +42,7 @@ def make_output_stubs(methodset, methods=None, nosids=False):
     headers += "Total\n"
     row_stub += "{%d:.0f}\n" % total_index
     return headers, row_stub
+
 
 def wrap_sites(raw_sites, methods, maxlen=10):
     """Wrap raw sites with wrappers implementing specified methods.
@@ -74,6 +76,7 @@ def wrap_sites(raw_sites, methods, maxlen=10):
     structs = cbclib.sites.get_structs(sites, methods)
     return wrapped_sites, structs, unwrapped_sites
 
+
 def cbcalc(sites, counts):
     """Calculate values for the sites by the counts.
 
@@ -99,6 +102,7 @@ def cbcalc(sites, counts):
         vals.append(tuple(row_vals))
     return vals
 
+
 class CBcalcProcess(Process):
     def __init__(self, index, seqs, sites, structs, locked_pipe):
         super(CBcalcProcess, self).__init__()
@@ -121,71 +125,78 @@ class CBcalcProcess(Process):
         with self.oulock:
             self.oupipe.send(("", []))
 
+
 def main(argv=None):
     """Main function.
 
     Parse CLI arguments and execute `cbcalc` function.
     """
     parser = argparse.ArgumentParser(
-        description="CBcalc - Compositional Bias calculation.",
+        description="CBcalc - Compositional Bias calculation tool.",
         add_help=False, usage="\n    %(prog)s ".join([
-            "", "--help", "--version", "[-soBMPK] FASTA [FASTA ...]",
-            "[-soBMPK] PATH -i LIST"
+            "", "--help", "--version",
+            "[-s LIST] [-o FILE] [-m N] [-BMPK] FASTA [FASTA ...]",
+            "[-s LIST] [-o FILE] [-m N] [-BMPK] PATH -i LIST"
         ])
     )
     parser.add_argument(
         "inseq", metavar="FASTA", nargs="+",
-        help="Input .fasta file, may be gzipped."
+        help="Fasta file, may be gzipped."
     )
     parser.add_argument(
         "-i", "--id", dest="insids", metavar="LIST",
-        type=argparse.FileType("r"), help="""Input LIST file with sequence
-        IDs; makes CBcalc to treat the first (and the only in the case)
-        positional argument as PATH stub."""
+        type=argparse.FileType("r"), help="""File with a
+        whitespace-separated list of sequence IDs; makes CBcalc to treat
+        the first (and the only in the case) positional argument as the
+        PATH stub."""
     )
     parser.add_argument(
         "_none", metavar="PATH", nargs="?", #to make up the help message
-        help="""Input .fasta files path stub with '{}' placeholder for
-        sequence IDs, which are listed in a LIST file specified with
+        help="""Fasta files path stub with '{}' placeholder for
+        sequence IDs, which are listed in the file specified with
         -i/--id option."""
     )
     parser.add_argument(
         "-s", "--site", dest="instl", metavar="LIST",
-        type=argparse.FileType('r'), default=sys.stdin,
-        help="File with a list of sites, one-per-line, default is stdin."
+        type=argparse.FileType('r'), default=sys.stdin, help="""File
+        with a whitespace-separated list of sites, default is STDIN."""
     )
     parser.add_argument(
         "-o", "--out", dest="outsv", metavar="FILE",
         type=argparse.FileType('w'), default=sys.stdout,
-        help="Output tabular (.tsv) file, default is stdout."
+        help="Output tabular (.tsv) file, default is STDOUT."
     )
     parser.add_argument(
         "-m", "--threads", dest="proc_num", metavar="N", type=int,
-        default=1, help="""A number of subprocesses to use, should not
+        default=1, help="""Number of subprocesses to use, should not
         exceed the number of the input fasta files; default is 1."""
     )
     method_group = parser.add_argument_group(
         description="""Folowing arguments determine which methods of
         expected frequency calculation to use. The order of the
         arguments defines the column order of the output file. If
-        no method is specified, default set (mmax, pevzner, karlin)
+        no method is specified, default set (mmax, pevzner, burge)
         will be used."""
     )
     method_group.add_argument(
         "-B", "--bernoulli", dest="methods", action="append_const",
-        const=cbclib.sites.Site.abbr, help="Bernoulli model based method"
+        const=cbclib.sites.Site.abbr,
+        help="Method based on Bernoulli model."
     )
     method_group.add_argument(
         "-M", "--mmax", dest="methods", action="append_const",
-        const=cbclib.sites.MarkovSite.abbr, help="Mmax based method"
+        const=cbclib.sites.MarkovSite.abbr,
+        help="Method based on maximum order Markov chain model."
     )
     method_group.add_argument(
         "-P", "--pevzner", dest="methods", action="append_const",
-        const=cbclib.sites.PevznerSite.abbr, help="Pevzner's method"
+        const=cbclib.sites.PevznerSite.abbr,
+        help="Method of Pevzner et al."
     )
     method_group.add_argument(
-        "-K", "--karlin", dest="methods", action="append_const",
-        const=cbclib.sites.KarlinSite.abbr, help="Karlin's method"
+        "-K", "--burge", dest="methods", action="append_const",
+        const=cbclib.sites.KarlinSite.abbr,
+        help="Method of Burge et al."
     )
     parser.add_argument(
         "-v", "--version", action="version",
