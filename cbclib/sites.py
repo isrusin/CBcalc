@@ -119,7 +119,7 @@ class Site(object):
         `struct_hash` -- site structure hash
     """
 
-    abbr = "B"
+    abbr = "M0"
 
     @staticmethod
     def get_structs(site):
@@ -245,7 +245,7 @@ class MarkovSite(Site):
     `Site` class dicstring.
     """
 
-    abbr = "M"
+    abbr = "MM"
 
     @staticmethod
     def get_structs(site):
@@ -301,7 +301,7 @@ class PevznerSite(Site):
     `Site` class dicstring.
     """
 
-    abbr = "P"
+    abbr = "PBM"
 
     @staticmethod
     def get_structs(site):
@@ -395,7 +395,7 @@ class KarlinSite(Site):
     `Site` class dicstring.
     """
 
-    abbr = "K"
+    abbr = "BCK"
 
     @staticmethod
     def get_structs(site):
