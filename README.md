@@ -34,11 +34,11 @@ have execute permission and its parent folder should be in the PATH
 environment variable. In the case it could be executed as:
 
 ```
-cbcalc.py [-s] [-o] [-BMPK] FILE [FILE ...]
+cbcalc.py [-s LIST] [-o FILE] [-m N] [-BMPK] FASTA [FASTA ...]
 ```
 or
 ```
-cbcalc.py [-s] [-o] [-BMPK] -i PATH
+cbcalc.py [-s LIST] [-o FILE] [-m N] [-BMPK] -i PATH
 ```
 
 Otherwise, you have to use full form:
@@ -49,11 +49,26 @@ python [path_to_cbcalc]/cbcalc.py ...
 
 *Note: CBcalc uses python 2.7*
 
-#### Options (list of sites, output file, methods of calculation):
-`-s` is for whitespace-delimited list of sites. If ommitted STDIN is used
+#### Positional arguments:
+CBcalc can accept Fasta files in two ways. Without `-i`/`--id` option, it
+treats all positional arguments as names (paths) of fasta files (may be
+gzipped). The file names (without parent folders and `.fasta[.gz]`
+extension) will be used as sequence names in the output table.
+
+Another way is to provide a whitespace-delimited list of sequence IDs as a
+text file through `-i`/`--id` option. In the case, the only positional
+argument is a batch for path of Fasta files. Use `{}` placeholder for
+sequence ID in the batch. The IDs will be used in the output table as
+sequence names.
+
+#### Options:
+`-s LIST` whitespace-delimited list of sites. If ommitted STDIN is used
 instead.
 
-`-o` is for output file name, STDOUT is default.
+`-o FILE` output TSV file name, STDOUT is default.
+
+`-m N` number of subprocesses, default is 1. The greater value makes sense
+only in case of multiple input sequences.
 
 A combination of `-B`, `-M`, `-P`, and `-K` flags determines which methods
 of compositional bias calculation to use and the order of the output
@@ -68,24 +83,12 @@ The methods are:
 
 Default combination is `-MPK`.
 
-#### Arguments (input sequences):
-CBcalc can accept Fasta files in two ways. Without `-i`/`--id` option, it
-treats all positional arguments as names (paths) of fasta files (may be
-gzipped). The file names (without parent folders and `.fasta[.gz]`
-extension) will be used as sequence names in the output table.
-
-Another way is to provide a whitespace-delimited list of sequence IDs as a
-text file through `-i`/`--id` option. In the case, the only positional
-argument is a batch for path to Fasta files. Use `{}` placeholder for
-sequence ID in the batch. The IDs will be used in the output table as
-sequence names.
-
 #### Examples:
 ```
 cbcalc.py -s sites.list -o output.tsv input1.fasta input2.fasta.gz
 ```
 Calculate compositional biases for all sites from the `sites.list` in the
-fasta files `input1.fasta` and `input2.fasta` with the default set of
+fasta files `input1.fasta` and `input2.fasta.gz` with the default set of
 methods (`M`, `P`, `K`) and write resulted table to the `output.tsv`.
 
 ```
