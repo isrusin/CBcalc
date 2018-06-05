@@ -157,16 +157,21 @@ class Site(object):
             self.gap_position = 0
         self.length = len(self.str_site)
         if self.length > maxlen:
-            raise ValueError("site is too long: %d", self.length)
+            raise ValueError("site is too long: %d" % self.length)
         if self.length == 0:
             raise ValueError("empty site")
         self.gap_length = len(self.str_init) - self.length
         if self.gap_length > maxgap:
-            raise ValueError("gap is too long: %d", self.gap_length)
+            raise ValueError("gap is too long: %d" % self.gap_length)
         self.eff_length = self.length - self.str_site.count("N")
-        self.dsite, self.struct_hash = digitize(
-            self.str_site, self.gap_position, self.gap_length
-        )
+        try:
+            self.dsite, self.struct_hash = digitize(
+                self.str_site, self.gap_position, self.gap_length
+            )
+        except KeyError as e:
+            raise ValueError(
+                "unknown nucleotide letter: %s" % e.message
+            )
 
     def get_length(self, effective=True):
         """Get length of the site.
