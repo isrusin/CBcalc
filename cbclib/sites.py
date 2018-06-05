@@ -149,7 +149,7 @@ class Site(object):
         self.str_init = site.upper().strip("N")
         if len(self.str_init) > 8 and "NNN" in self.str_init:
             uhalf = self.str_init[:6].strip("N")
-            dhalf = self.str_init[-6:].strip("N")
+            dhalf = self.str_init[6:].strip("N")
             self.str_site = uhalf + dhalf
             self.gap_position = len(uhalf)
         else:
