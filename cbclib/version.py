@@ -1,4 +1,4 @@
 """a cbclib version storage module."""
 
-version_tuple = (1, 2, 0)
+version_tuple = (1, 2, 1)
 full_version = "%d.%d.%d" % version_tuple
