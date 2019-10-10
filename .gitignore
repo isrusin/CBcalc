@@ -1,3 +1,5 @@
+.rsync-filter
+
 cbclib/count_words
 *.pyc
 *.o
