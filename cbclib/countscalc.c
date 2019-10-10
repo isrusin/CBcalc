@@ -45,7 +45,7 @@ int translate(char nucl){
         case 'C': case 'c': return 1;
         case 'G': case 'g': return 2;
         case 'T': case 't': return 3;
-        case '\n': case '\t': case ' ': case '-': return -2;
+        case '\n': case '\r': case '\t': case ' ': case '-': return -2;
         default: return -1;
     }
 }
