@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """Compositional Bias calculation tool."""
 
@@ -226,7 +226,7 @@ def main(argv=None):
     sites, structs, _unwrapped = wrap_sites(raw_sites, methodset)
     with args.outsv as outsv:
         outsv.write(headers)
-        fastas = zip(sids, seqs)
+        fastas = list(zip(sids, seqs))
         if args.proc_num > 1:
             reciver, sender = Pipe(False)
             locked_sender = (Lock(), sender)
