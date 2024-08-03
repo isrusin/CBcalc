@@ -2,11 +2,6 @@
 
 #include "countscalc.h"
 
-extern char* error_message;
-extern int error_type;
-extern const int FILE_ERROR;
-extern const int MEMORY_ERROR;
-
 const int MAX_LENGTH = 14;
 const int MAX_GAP_LENGTH = 14;
 

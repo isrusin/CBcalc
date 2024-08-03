@@ -1,9 +1,7 @@
 #include "countscalc.h"
 
+char* error_message = NULL;
 int error_type = 0;
-const int FILE_ERROR = 1;
-const int MEMORY_ERROR = 2;
-char *error_message = NULL;
 
 gzFile open_fasta(char *filename){
     gzFile fasta;
@@ -140,6 +138,8 @@ void countup_subsites(int len, int pos, long **countsp){
 
 long **count_short_words(char *filename, int len){
     gzFile fasta = open_fasta(filename);
+    if(!fasta)
+        return NULL;
     long **counts = allocate_counts(len, len);
     site_t site;
     site.len = len;
@@ -250,6 +250,8 @@ void countup_bipart_res(bipart_t *sp, long **countsp){
 
 long **count_bipart_words(char *filename, int len, int pos, int gap){
     gzFile fasta = open_fasta(filename);
+    if(!fasta)
+        return NULL;
     long **counts = allocate_counts(len, len - pos);
     bipart_t bpsite = make_bpsite(gap, pos, len - pos);
     while(skip(fasta) != 0){
