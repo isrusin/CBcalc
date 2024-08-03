@@ -5,8 +5,9 @@ dumper-loader functions for wrapped site collections. Each wrapper class
 implements a method of compositional bias calculation.
 """
 
-import cPickle
+import pickle
 from decimal import Decimal
+
 
 __all__ = [
     "hash_struct", "digitize",
@@ -16,7 +17,6 @@ __all__ = [
 ]
 
 NUCLS = {"A": 0, "C": 1, "G": 2, "T": 3}
-
 DNUCLS = {
     "N": [0, 1, 2, 3],
     "A": [0], "B": [1, 2, 3],
@@ -30,6 +30,7 @@ DNUCLS = {
 
 MAX_LENGTH = 14
 MAX_GAP_LENGTH = 14
+
 
 def hash_struct(site_length, gap_position=0, gap_length=0):
     """Calculate hash for the given structure of a site.
@@ -52,6 +53,7 @@ def hash_struct(site_length, gap_position=0, gap_length=0):
         struct_hash += (gap_position - 1) * MAX_LENGTH
         struct_hash += (gap_length - 1) * (MAX_LENGTH - 1) * MAX_LENGTH
     return struct_hash
+
 
 def digitize(site, gap_position=0, gap_length=0):
     """Return integer representation of the site.
@@ -87,7 +89,8 @@ def digitize(site, gap_position=0, gap_length=0):
     struct_hash = hash_struct(length, gap_position, gap_length)
     return sites, struct_hash
 
-class Site(object):
+
+class Site:
 
     """A parent site wrapper class.
 
@@ -242,6 +245,7 @@ class Site(object):
             self.length, self.gap_position, self.gap_length
         )
 
+
 class MarkovSite(Site):
 
     """Site wrapper implementing Mmax-based expected number calculation.
@@ -297,6 +301,7 @@ class MarkovSite(Site):
             return float("NaN")
         num = counts.get_count(*self.lpart) * counts.get_count(*self.rpart)
         return float(num) / div
+
 
 class PevznerSite(Site):
 
@@ -377,6 +382,7 @@ class PevznerSite(Site):
             numerator *= counts.get_count(*_site)
         return pow(numerator, 2.0/self.eff_length) / divisor
 
+
 def _degenerate(start, arr_site, eff_length,
                 curr_list, next_list, gap_position, gap_length):
     """Recursively degenerate the given site."""
@@ -391,6 +397,7 @@ def _degenerate(start, arr_site, eff_length,
         _degenerate(index+1, arr_site, eff_length-1,
                     next_list, curr_list, gap_position, gap_length)
         arr_site[index] = removed
+
 
 class KarlinSite(Site):
 
@@ -447,6 +454,7 @@ class KarlinSite(Site):
             numerator *= Decimal(counts.get_freq(*_site))
         return float(numerator / divisor)
 
+
 def get_wrapper_by_abbr(abbr):
     """Get site wrapper class by abbreviation."""
     for cls in [Site, MarkovSite, PevznerSite, KarlinSite]:
@@ -454,15 +462,18 @@ def get_wrapper_by_abbr(abbr):
             return cls
     return None
 
+
 def dump_site_list(site_list, ounsl):
     """Dump collection of wrapped sites into file."""
     with ounsl:
-        cPickle.dump(site_list, ounsl, -1)
+        pickle.dump(site_list, ounsl, -1)
+
 
 def load_site_list(innsl):
     """Load collection of wrapped sites from the dump file."""
     with innsl:
-        return cPickle.load(innsl)
+        return pickle.load(innsl)
+
 
 def get_structs(site_list, method_abbrs):
     """Return a tuple of site structures required to handle the sites.
