@@ -20,7 +20,7 @@ cd CBcalc/
 
 Build cbclib:
 ```
-python setup.py build_ext -i
+python3 setup.py build_ext -i
 ```
 
 ### Other platforms
@@ -44,10 +44,10 @@ cbcalc.py [-s LIST] [-o FILE] [-m N] [-BMPK] -i PATH
 Otherwise, you have to use full form:
 
 ```
-python [path_to_cbcalc]/cbcalc.py ...
+python3 [path_to_cbcalc]/cbcalc.py ...
 ```
 
-*Note: CBcalc uses python 2.7*
+*Note: CBcalc uses python3 since v1.3*
 
 #### Positional arguments:
 CBcalc can accept Fasta files in two ways. Without `-i`/`--id` option, it
@@ -126,5 +126,5 @@ determined by the number and the order of the method options.
 for single-sequence requests.
 
 ## Requirements
-* Python 2.7
+* Python 3
 * python-dev package

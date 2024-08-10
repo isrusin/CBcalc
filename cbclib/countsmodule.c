@@ -128,7 +128,7 @@ static void Counts_dealloc(Counts *self){
     free(structs);
     free(self->countset);
     free(self->totals);
-    self->ob_type->tp_free((PyObject *)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *Counts_get_count(Counts *self, PyObject *args,
@@ -145,7 +145,7 @@ static PyObject *Counts_get_count(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(PySequence_GetItem(dsite_seq, i));
+            dsite = PyLong_AsLong(PySequence_GetItem(dsite_seq, i));
             count += counts[dsite];
         }
         return Py_BuildValue("l", count);
@@ -166,7 +166,7 @@ static PyObject *Counts_get_freq(Counts *self, PyObject *args,
         long dsite;
         int i;
         for(i=0; i<dsite_num; i++){
-            dsite = PyInt_AsLong(PySequence_GetItem(dsite_seq, i));
+            dsite = PyLong_AsLong(PySequence_GetItem(dsite_seq, i));
             count += counts[dsite];
         }
         double freq = (double) count;
@@ -221,8 +221,7 @@ static PyMethodDef Counts_methods[] = {
 };
 
 static PyTypeObject CountsType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                          /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "counts.Counts",            /*tp_name*/
     sizeof(Counts),             /*tp_basicsize*/
     0,                          /*tp_itemsize*/
@@ -272,23 +271,29 @@ static PyMethodDef counts_methods[] = {
     {NULL}
 };
 
-#ifndef PyMODINIT_FUNC
-#define PyMODINIT_FUNC void
-#endif
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "counts",            /* m_name */
+    "a module for calculation of word counts.\n\n"
+    "The module contains the only class `Counts` wich gets a fasta\n"
+    "file name and a list of word structures to calculate counts for\n"
+    "in its constructor. The calculated values are available with\n"
+    "`get_count`, `get_freq`, and `get_total` methods.\n", /* m_doc */
+    -1,                  /* m_size */
+    counts_methods,      /* m_methods */
+    NULL,                /* m_reload */
+    NULL,                /* m_traverse */
+    NULL,                /* m_clear */
+    NULL,                /* m_free */
+};
 
-PyMODINIT_FUNC
-initcounts(void){
+PyMODINIT_FUNC PyInit_counts(void){
     PyObject* counts;
     CountsType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&CountsType) < 0)
-        return;
-    counts = Py_InitModule3("counts", counts_methods,
-        "a module for calculation of word counts.\n\n"
-        "The module contains the only class `Counts` wich gets a fasta\n"
-        "file name and a list of word structures to calculate counts for\n"
-        "in its constructor. The calculated values are available with\n"
-        "`get_count`, `get_freq`, and `get_total` methods.\n"
-    );
+        return NULL;
+    counts = PyModule_Create(&moduledef);
     Py_INCREF(&CountsType);
     PyModule_AddObject(counts, "Counts", (PyObject *)&CountsType);
+    return counts;
 }
